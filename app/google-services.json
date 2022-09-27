@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "323879518255",
+    "project_id": "cookme-fsm",
+    "storage_bucket": "cookme-fsm.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:323879518255:android:e1f4eefdb4e552666fc6da",
+        "android_client_info": {
+          "package_name": "com.cookmefsm"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "323879518255-spev5fj41i8kvc3r4c2dm1c5qk47hqrj.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAQ4eHXR6HtMIGhvZk1O8D-JR3O98y79m0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "323879518255-spev5fj41i8kvc3r4c2dm1c5qk47hqrj.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

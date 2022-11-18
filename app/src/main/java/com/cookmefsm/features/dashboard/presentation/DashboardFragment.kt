@@ -48,6 +48,7 @@ import com.cookmefsm.features.addshop.api.assignToPPList.AssignToPPListRepoProvi
 import com.cookmefsm.features.addshop.api.assignedToDDList.AssignToDDListRepoProvider
 import com.cookmefsm.features.addshop.api.typeList.TypeListRepoProvider
 import com.cookmefsm.features.addshop.model.AssignedToShopListResponseModel
+import com.cookmefsm.features.addshop.model.BeatListResponseModel
 import com.cookmefsm.features.addshop.model.EntityResponseModel
 import com.cookmefsm.features.addshop.model.PartyStatusResponseModel
 import com.cookmefsm.features.addshop.model.assigntoddlist.AssignToDDListResponseModel
@@ -2517,8 +2518,54 @@ class DashboardFragment : BaseFragment(), View.OnClickListener, HBRecorderListen
         }
 
 
-        callUserConfigApi()   // calling instead of checkToCallAssignedDDListApi()
+        //callUserConfigApi()   // calling instead of checkToCallAssignedDDListApi()
+        getBeatListApi()
     }
+
+
+    private fun getBeatListApi() {
+        val repository = TypeListRepoProvider.provideTypeListRepository()
+        progress_wheel.spin()
+        BaseActivity.compositeDisposable.add(
+            repository.beatList()
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribeOn(Schedulers.io())
+                .subscribe({ result ->
+                    val response = result as BeatListResponseModel
+                    if (response.status == NetworkConstant.SUCCESS) {
+                        val list = response.beat_list
+                        if (list != null && list.isNotEmpty()) {
+                            doAsync {
+                                AppDatabase.getDBInstance()?.beatDao()?.delete()
+                                list.forEach {
+                                    val beat = BeatEntity()
+                                    AppDatabase.getDBInstance()?.beatDao()?.insert(beat.apply {
+                                        beat_id = it.id
+                                        name = it.name
+                                    })
+                                }
+                                uiThread {
+                                    progress_wheel.stopSpinning()
+                                    callUserConfigApi()
+                                }
+                            }
+                        } else {
+                            progress_wheel.stopSpinning()
+                            callUserConfigApi()
+                        }
+                    } else {
+                        progress_wheel.stopSpinning()
+                        callUserConfigApi()
+                    }
+
+                }, { error ->
+                    progress_wheel.stopSpinning()
+                    error.printStackTrace()
+                    callUserConfigApi()
+                })
+        )
+    }
+
 
     private fun checkToCallAssignedDDListApi() {
         if (!TextUtils.isEmpty(Pref.profile_state))
@@ -4071,6 +4118,9 @@ class DashboardFragment : BaseFragment(), View.OnClickListener, HBRecorderListen
 
                                 if (configResponse.IsDistributorSelectionRequiredinAttendance != null)
                                     Pref.IsDistributorSelectionRequiredinAttendance = configResponse.IsDistributorSelectionRequiredinAttendance!!
+
+                                if (configResponse.IsAllowNearbyshopWithBeat != null)
+                                    Pref.IsAllowNearbyshopWithBeat = configResponse.IsAllowNearbyshopWithBeat!!
 
                             }
                             BaseActivity.isApiInitiated = false

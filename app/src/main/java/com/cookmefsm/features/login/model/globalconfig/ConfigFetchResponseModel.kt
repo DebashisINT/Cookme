@@ -99,7 +99,7 @@ class ConfigFetchResponseModel : BaseResponse() {
     var TodaysTaskText:String = ""
     var IsDistributorSelectionRequiredinAttendance:Boolean? = null
 
-
+    var IsAllowNearbyshopWithBeat:Boolean? = null
 
 
 

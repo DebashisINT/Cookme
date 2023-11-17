@@ -17,7 +17,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.Toast
-import androidx.core.content.FileProvider
 import androidx.recyclerview.widget.RecyclerView
 import com.amulyakhare.textdrawable.TextDrawable
 import com.amulyakhare.textdrawable.util.ColorGenerator
@@ -56,7 +55,11 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 
-
+//Revision History
+// 1.0 ViewAllQuotListFragment  AppV 4.0.6  Saheli    09/01/2023 Pdf template work
+// 2.0 ViewAllQuotListFragment  AppV 4.0.6  Saheli    23/01/2023 Pdf template function modification work
+// 3.0 ViewAllQuotListFragment  AppV 4.0.7  Suman    14/02/2023 pdf pincode dynamic and rate+qty+color position handle mantis 25670
+// 4.0 ViewAllQuotListFragment  AppV 4.0.8  Saheli    16/05/2023 pdf remark field mantis 26139
 class ViewAllQuotListFragment : BaseFragment(), View.OnClickListener {
 
     private lateinit var mContext: Context
@@ -74,6 +77,8 @@ class ViewAllQuotListFragment : BaseFragment(), View.OnClickListener {
 
     lateinit var simpleDialog: Dialog
     lateinit var addQuotEditResult: ViewDetailsQuotResponse
+
+    var pdfTemplateName: String = ""  // 2.0 ViewAllQuotListFragment  AppV 4.0.6 Pdf template function modification work
 
     companion object {
         var shop_id: String = ""
@@ -297,7 +302,9 @@ class ViewAllQuotListFragment : BaseFragment(), View.OnClickListener {
                                 addQuotEditResult = addQuotResult
                                 progress_wheel.stopSpinning()
                                 if (addQuotResult!!.status == NetworkConstant.SUCCESS) {
-                                    saveDataAsPdf(addQuotEditResult)
+                                    // 2.0 ViewAllQuotListFragment  AppV 4.0.6 Pdf template function modification work
+                                    pdfTemplateName = addQuotResult.sel_quotation_pdf_template!!
+                                    saveDataAsPdfN(addQuotEditResult,pdfTemplateName)
                                 } else {
                                     (mContext as DashboardActivity).showSnackMessage(getString(R.string.something_went_wrong))
                                 }
@@ -319,14 +326,38 @@ class ViewAllQuotListFragment : BaseFragment(), View.OnClickListener {
     }
 
 
+    fun openDialogPopup(header:String,text:String){
+        val simpleDialog = Dialog(mContext)
+        simpleDialog.setCancelable(false)
+        simpleDialog.getWindow()!!.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+        simpleDialog.setContentView(R.layout.dialog_ok_imei)
+        val dialogHeader = simpleDialog.findViewById(R.id.dialog_yes_header) as AppCustomTextView
+        val dialogBody = simpleDialog.findViewById(R.id.dialog_yes_body) as AppCustomTextView
+        dialogHeader.text = header
+        dialogBody.text = text
+        val dialogYes = simpleDialog.findViewById(R.id.tv_dialog_yes) as AppCustomTextView
+        dialogYes.setOnClickListener({ view ->
+            simpleDialog.cancel()
+        })
+        simpleDialog.show()
+    }
+
+    fun updateView(){
+        quotListCall(shop_id)
+    }
+
+    // 1.0 ViewAllQuotListFragment  AppV 4.0.6  Pdf template work
+
+    // 2.0 ViewAllQuotListFragment  AppV 4.0.6 Pdf template function modification work
     @SuppressLint("UseRequireInsteadOfGet")
-    private fun saveDataAsPdf(addQuotEditResult: ViewDetailsQuotResponse) {
-        var document: Document = Document()
+    private fun saveDataAsPdfN(addQuotEditResult: ViewDetailsQuotResponse,pdfTtemplateName : String) {
+        var document: Document = Document(PageSize.A4, 36f, 36f, 36f, 80f)
+
         val time = System.currentTimeMillis()
         //val fileName = "QUTO_" +  "_" + time
         var fileName = addQuotEditResult.quotation_number!!.toUpperCase() +  "_" + time
         fileName=fileName.replace("/", "_")
-        val path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).toString()+"/cookmefsmApp/QUTO/"
+        val path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).toString()+"/FSMApp/QUTO/"
 
         val dir = File(path)
         if (!dir.exists()) {
@@ -336,7 +367,13 @@ class ViewAllQuotListFragment : BaseFragment(), View.OnClickListener {
         try{
             progress_wheel.spin()
             var pdfWriter :PdfWriter = PdfWriter.getInstance(document, FileOutputStream(path + fileName + ".pdf"))
-            val event = HeaderFooterPageEvent()
+            // 1.0 HeaderFooterPageEvent  AppV 4.0.7  Suman 27/02/2023 footer image with text mantis 25705
+            val event = HeaderFooterPageEvent(if(Pref.IsShowQuotationFooterforEurobond){
+                "EURO PANEL PRODUCTS LIMITED"
+            }else{
+                getString(R.string.app_name)
+            },addQuotEditResult.salesman_name.toString(),addQuotEditResult.salesman_designation.toString(),addQuotEditResult.salesman_login_id.toString(),
+                addQuotEditResult.salesman_email.toString())
             pdfWriter.setPageEvent(event)
 
             //PdfWriter.getInstance(document, FileOutputStream(path + fileName + ".pdf"))
@@ -346,27 +383,29 @@ class ViewAllQuotListFragment : BaseFragment(), View.OnClickListener {
             var fontB1: Font = Font(Font.FontFamily.HELVETICA, 9f, Font.BOLD)
             var font1: Font = Font(Font.FontFamily.HELVETICA, 8f, Font.NORMAL)
             var font1Big: Font = Font(Font.FontFamily.HELVETICA, 10f, Font.NORMAL)
-            val grayFront = Font(Font.FontFamily.HELVETICA, 10f, Font.NORMAL, BaseColor.GRAY)
-
+            var font2Big: Font = Font(Font.FontFamily.HELVETICA, 9f, Font.NORMAL)
+            var font1small: Font = Font(Font.FontFamily.HELVETICA, 8f, Font.NORMAL)
+//            val grayFront = Font(Font.FontFamily.HELVETICA, 10f, Font.NORMAL, BaseColor.GRAY)
+            val grayFront = Font(Font.FontFamily.HELVETICA, 10f, Font.NORMAL, BaseColor.BLACK)
 
             //image add
             val bm: Bitmap = BitmapFactory.decodeResource(resources, R.drawable.breezelogo)
-            val bitmap = Bitmap.createScaledBitmap(bm, 220, 90, true);
+            val bitmap = Bitmap.createScaledBitmap(bm, 200, 80, true);
             val stream = ByteArrayOutputStream()
             bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
             var img: Image? = null
             val byteArray: ByteArray = stream.toByteArray()
             try {
                 img = Image.getInstance(byteArray)
-                img.scaleToFit(155f,90f)
-                img.scalePercent(70f)
+                //img.scaleToFit(155f,90f)
+                img.scalePercent(50f)
                 img.alignment=Image.ALIGN_RIGHT
             } catch (e: BadElementException) {
                 e.printStackTrace()
             } catch (e: IOException) {
                 e.printStackTrace()
             }
-            document.add(img)
+            //document.add(img)
 
 
             //var quotDate = AppUtils.getFormatedDateNew(addQuotEditResult.quotation_date_selection!!.replace("12:00:00 AM",""),"mm-dd-yyyy","dd-mm-yyyy")
@@ -377,6 +416,9 @@ class ViewAllQuotListFragment : BaseFragment(), View.OnClickListener {
             dateLine.spacingAfter = 5f
             document.add(dateLine)*/
 
+            val sp1 = Paragraph("", font)
+            sp1.spacingAfter = 10f
+            document.add(sp1)
 
             val para = Paragraph()
             val glue = Chunk(VerticalPositionMark())
@@ -385,7 +427,7 @@ class ViewAllQuotListFragment : BaseFragment(), View.OnClickListener {
             ph1.add(Chunk("DATE: " + addQuotEditResult.quotation_date_selection!!, font))
             ph1.add(glue) // Here I add special chunk to the same phrase.
 
-            ph1.add(Chunk(addQuotEditResult.quotation_number + "                         ", font))
+            ph1.add(Chunk(addQuotEditResult.quotation_number + "       ", font))
             para.add(ph1)
             document.add(para)
 
@@ -447,13 +489,47 @@ class ViewAllQuotListFragment : BaseFragment(), View.OnClickListener {
 //            cusemail.spacingAfter = 5f
 //            document.add(cusemail)
 
+            val shopPincode = Paragraph("Pincode : "+addQuotEditResult.shop_address_pincode, font)
+            shopPincode.alignment = Element.ALIGN_LEFT
+            shopPincode.spacingAfter = 5f
+            try{
+                // 3.0 ViewAllQuotListFragment  AppV 4.0.7  Suman    14/02/2023 pdf pincode dynamic and rate+qty+color position handle mantis 25670
+                if(!finalStr.contains(addQuotEditResult.shop_address_pincode.toString()))
+                    document.add(shopPincode)
+            }catch (ex:Exception){
+                ex.printStackTrace()
+            }
+
 
             val projectName = Paragraph("Project Name : "+addQuotEditResult.project_name, font)
             projectName.alignment = Element.ALIGN_LEFT
             projectName.spacingAfter = 5f
             document.add(projectName)
 
-            val cusemail = Chunk("Email : " +  addQuotEditResult.shop_email, font)
+            var emailCollectionStr = ""
+            var nameCollectionStr = ""
+            var numberCollectionStr = ""
+            var finalNamePhStr = ""
+            if(addQuotEditResult.extra_contact_list!!.size>0){
+                for(i in 0..addQuotEditResult.extra_contact_list!!.size-1){
+                    var ob = addQuotEditResult.extra_contact_list!!.get(i)
+                    emailCollectionStr=emailCollectionStr+ if(ob.quotation_contact_email == null) "" else ob.quotation_contact_email +","
+                    nameCollectionStr=nameCollectionStr+ ob.quotation_contact_person+","
+                    numberCollectionStr=numberCollectionStr+ ob.quotation_contact_number+","
+                    finalNamePhStr = finalNamePhStr + ob.quotation_contact_person+" (Mob.No. ${ob.quotation_contact_number} )/"
+                }
+                nameCollectionStr =  nameCollectionStr.dropLast(1)
+                emailCollectionStr =  emailCollectionStr.dropLast(1)
+                numberCollectionStr =  numberCollectionStr.dropLast(1)
+                finalNamePhStr =  finalNamePhStr.dropLast(1)
+            }else{
+                emailCollectionStr = if(addQuotEditResult.shop_email==null) "" else addQuotEditResult.shop_email!!
+                nameCollectionStr = addQuotEditResult.shop_owner_name.toString()
+                numberCollectionStr = addQuotEditResult.shop_phone_no.toString()
+                finalNamePhStr = nameCollectionStr+" (Mob.No. $numberCollectionStr )"
+            }
+
+            val cusemail = Chunk("Email : " +  emailCollectionStr, font)
             //cusemail.setUnderline(0.1f, -2f) //0.1 thick, -2 y-location
             document.add(cusemail)
 
@@ -462,8 +538,10 @@ class ViewAllQuotListFragment : BaseFragment(), View.OnClickListener {
             xx.spacingAfter = 6f
             document.add(xx)
 
+
             //val cusowner = Paragraph("Kind Attn. " + addQuotEditResult.shop_owner_name +"  "+ "(Mob.No.  " + addQuotEditResult.shop_phone_no +  ")", font)
-            val cusowner = Chunk("Kind Attn. " +  "Mr./Mrs. "+addQuotEditResult.shop_owner_name + "  " + "(Mob.No.  " + addQuotEditResult.shop_phone_no + ")", font)
+            //val cusowner = Chunk("Kind Attn. " +  "Mr./Mrs. "+addQuotEditResult.shop_owner_name + "  " + "(Mob.No.  " + addQuotEditResult.shop_phone_no + ")", font)
+            val cusowner = Chunk("Kind Attn. " +  "Mr./Mrs. "+finalNamePhStr, font)
             cusowner.setUnderline(0.1f, -2f) //0.1 thick, -2 y-location
             //cusowner.alignment = Element.ALIGN_LEFT
             //cusowner.spacingAfter = 5f
@@ -476,10 +554,13 @@ class ViewAllQuotListFragment : BaseFragment(), View.OnClickListener {
             x.spacingAfter = 6f
             document.add(x)
 
-
-            //val sub = Paragraph("Sub :-Quotation For Eurobond-ALUMINIUM COMPOSITE PANEL", font)
-            //val sub = Chunk("Sub :-Quotation For Eurobond-ALUMINIUM COMPOSITE PANEL", font)
-            val sub = Chunk("Sub :-Quotation For "+getString(R.string.app_name), font)
+            // Hardcoded for EuroBond
+            var sub = Chunk("",font)
+            if(Pref.IsShowQuotationFooterforEurobond){
+                sub = Chunk("Sub :-Quotation For Eurobond-ALUMINIUM COMPOSITE PANEL", font)
+            }else{
+                sub = Chunk("Sub :-Quotation For "+getString(R.string.app_name), font)
+            }
             sub.setUnderline(0.1f, -2f) //0.1 thick, -2 y-location
             //sub.alignment = Element.ALIGN_LEFT
             //sub.spacingAfter = 10f
@@ -493,12 +574,13 @@ class ViewAllQuotListFragment : BaseFragment(), View.OnClickListener {
             document.add(body)
 
             // table header
-            //val widths = floatArrayOf(0.05f, 0.55f, 0.2f, 0.2f)
-            val widths = floatArrayOf(0.07f, 0.40f,0.13f, 0.2f, 0.2f)
+//            val widths = floatArrayOf(0.07f, 0.40f,0.13f, 0.2f, 0.2f)
+            val widths = floatArrayOf(0.07f, 0.44f,0.13f, 0.18f, 0.18f)
 
             var tableHeader: PdfPTable = PdfPTable(widths)
             tableHeader.getDefaultCell().setHorizontalAlignment(Element.ALIGN_CENTER)
             tableHeader.setWidthPercentage(100f)
+
 
             val cell1 = PdfPCell(Phrase("Sr.No",font1Big))
             cell1.setHorizontalAlignment(Element.ALIGN_CENTER);
@@ -508,7 +590,7 @@ class ViewAllQuotListFragment : BaseFragment(), View.OnClickListener {
             cell2.setHorizontalAlignment(Element.ALIGN_CENTER);
             tableHeader.addCell(cell2);
 
-            val cell2_1 = PdfPCell(Phrase("Color Code",font1Big))
+            val cell2_1 = PdfPCell(Phrase("Color Code/Series",font1Big))
             cell2_1.setHorizontalAlignment(Element.ALIGN_CENTER);
             tableHeader.addCell(cell2_1);
 
@@ -542,6 +624,7 @@ class ViewAllQuotListFragment : BaseFragment(), View.OnClickListener {
                 srNo= (i+1).toString()
                 desc=obj!!.get(i).product_name.toString() //+ "\n\n"+ "Color Code : "+obj.get(i).color_name
                 colorCode = obj.get(i).color_name.toString()
+//                colorCode = "solid and metalic"
                 rateSqFt="INR - "+obj!!.get(i).rate_sqft.toString()
                 rateSqMtr="INR - "+obj!!.get(i).rate_sqmtr.toString()
                 try{
@@ -549,32 +632,47 @@ class ViewAllQuotListFragment : BaseFragment(), View.OnClickListener {
                 }catch (ex:Exception){
                     catagory=""
                 }
-                desc=desc+"\n"+catagory
+
+                if(pdfTtemplateName.contains("General")){
+                    desc=desc+"\n"+catagory
+                }
+                else{
+                    desc=desc+"\n"+obj!!.get(i).product_des.toString()
+                }
+
 
                 val tableRows = PdfPTable(widths)
                 tableRows.defaultCell.horizontalAlignment = Element.ALIGN_CENTER
                 tableRows.setWidthPercentage(100f);
 
-                var cellBodySl = PdfPCell(Phrase(srNo,font1Big))
+                var cellBodySl = PdfPCell(Phrase(srNo,font1small))
                 cellBodySl.setHorizontalAlignment(Element.ALIGN_CENTER);
                 tableRows.addCell(cellBodySl)
 
-                var cellBodyDesc = PdfPCell(Phrase(desc,font1Big))
+                var cellBodyDesc = PdfPCell(Phrase(desc,font1small))
                 cellBodyDesc.setHorizontalAlignment(Element.ALIGN_CENTER);
                 tableRows.addCell(cellBodyDesc)
 
-                var cellBodyColor = PdfPCell(Phrase(colorCode,font1Big))
+                // 3.0 ViewAllQuotListFragment  AppV 4.0.7  Suman    14/02/2023 pdf pincode dynamic and rate+qty+color position handle mantis 25670
+                var cellBodyColor = PdfPCell(Phrase(colorCode,font1small))
+                //cellBodyColor.setHorizontalAlignment(Element.ALIGN_CENTER);
                 cellBodyColor.setHorizontalAlignment(Element.ALIGN_CENTER);
+                cellBodyColor.verticalAlignment = Element.ALIGN_MIDDLE
                 tableRows.addCell(cellBodyColor)
 
-                var cellBodySqMtr = PdfPCell(Phrase(rateSqMtr,font1Big))
+                // 3.0 ViewAllQuotListFragment  AppV 4.0.7  Suman    14/02/2023 pdf pincode dynamic and rate+qty+color position handle mantis 25670
+                var cellBodySqMtr = PdfPCell(Phrase(rateSqMtr,font1small))
+                //cellBodySqMtr.setHorizontalAlignment(Element.ALIGN_CENTER);
                 cellBodySqMtr.setHorizontalAlignment(Element.ALIGN_CENTER);
+                cellBodySqMtr.verticalAlignment = Element.ALIGN_MIDDLE
                 tableRows.addCell(cellBodySqMtr)
 
-                var cellBodySqFt = PdfPCell(Phrase(rateSqFt,font1Big))
+                // 3.0 ViewAllQuotListFragment  AppV 4.0.7  Suman    14/02/2023 pdf pincode dynamic and rate+qty+color position handle mantis 25670
+                var cellBodySqFt = PdfPCell(Phrase(rateSqFt,font1small))
+                //cellBodySqFt.setHorizontalAlignment(Element.ALIGN_CENTER);
                 cellBodySqFt.setHorizontalAlignment(Element.ALIGN_CENTER);
+                cellBodySqFt.verticalAlignment = Element.ALIGN_MIDDLE
                 tableRows.addCell(cellBodySqFt)
-
 
                 document.add(tableRows)
 
@@ -583,7 +681,7 @@ class ViewAllQuotListFragment : BaseFragment(), View.OnClickListener {
 
 
 
-            val terms = Chunk("\nTerms & Conditions:-", font)
+            val terms = Chunk("Terms & Conditions:-", font)
 //            terms.alignment = Element.ALIGN_LEFT
 //            terms.spacingAfter = 5f
             terms.setUnderline(0.1f, -2f) //0.1 thick, -2 y-location
@@ -591,48 +689,57 @@ class ViewAllQuotListFragment : BaseFragment(), View.OnClickListener {
 
 
 
-            val taxs = Paragraph("Taxes                                                  :     " + addQuotEditResult.taxes, font1Big)
+            val taxs = Paragraph("Taxes                                                  :     " + addQuotEditResult.taxes, font2Big)
             taxs.alignment = Element.ALIGN_LEFT
             taxs.spacingAfter = 2f
             document.add(taxs)
 
 
-            val freight = Paragraph("Freight                                                 :     " + addQuotEditResult.Freight, font1Big)
+            val freight = Paragraph("Freight                                                 :     " + addQuotEditResult.Freight, font2Big)
             freight.alignment = Element.ALIGN_LEFT
             freight.spacingAfter = 2f
             document.add(freight)
 
 
-            val delivery = Paragraph("Delivery Time                                      :     " + addQuotEditResult.delivery_time, font1Big)
+            val delivery = Paragraph("Delivery Time                                      :     " + addQuotEditResult.delivery_time, font2Big)
             delivery.alignment = Element.ALIGN_LEFT
             delivery.spacingAfter = 2f
             document.add(delivery)
 
 
-            val payment = Paragraph("Payment                                              :     " + addQuotEditResult.payment, font1Big)
+            val payment = Paragraph("Payment                                              :     " + addQuotEditResult.payment, font2Big)
             payment.alignment = Element.ALIGN_LEFT
             payment.spacingAfter = 2f
             document.add(payment)
 
-            val validity = Paragraph("Validity                                                 :     " + addQuotEditResult.validity, font1Big)
+            val validity = Paragraph("Validity                                                 :     " + addQuotEditResult.validity, font2Big)
             validity.alignment = Element.ALIGN_LEFT
             validity.spacingAfter = 2f
             document.add(validity)
 
-            val billing = Paragraph("Billing                                                   :     " + addQuotEditResult.billing, font1Big)
+            val billing = Paragraph("Billing                                                   :     " + addQuotEditResult.billing, font2Big)
             billing.alignment = Element.ALIGN_LEFT
             billing.spacingAfter = 2f
             document.add(billing)
 
-            val product_tolerance_of_thickness = Paragraph("Product Tolerance of Thickness          :     " + addQuotEditResult.product_tolerance_of_thickness, font1Big)
+            val product_tolerance_of_thickness = Paragraph("Product Tolerance of Thickness          :     " + addQuotEditResult.product_tolerance_of_thickness, font2Big)
             product_tolerance_of_thickness.alignment = Element.ALIGN_LEFT
             product_tolerance_of_thickness.spacingAfter = 2f
             document.add(product_tolerance_of_thickness)
 
-            val product_tolerance_of_coating = Paragraph("Tolerance of Coating Thickness          :     " + addQuotEditResult.tolerance_of_coating_thickness, font1Big)
+            val product_tolerance_of_coating = Paragraph("Tolerance of Coating Thickness          :     " + addQuotEditResult.tolerance_of_coating_thickness, font2Big)
             product_tolerance_of_coating.alignment = Element.ALIGN_LEFT
-            product_tolerance_of_coating.spacingAfter = 3f
+            product_tolerance_of_coating.spacingAfter = 6f
             document.add(product_tolerance_of_coating)
+
+            // rev 4.0 ViewAllQuotListFragment  AppV 4.0.8  Saheli    16/05/2023 pdf remark field mantis 26139
+
+            val remarks = Paragraph("Remarks                                              :     " + addQuotEditResult.Remarks, font2Big)
+            remarks.alignment = Element.ALIGN_LEFT
+            remarks.spacingAfter = 6f
+            document.add(remarks)
+
+            // end 4.0 rev mantis 26139 PDF remarks field added saheli v 4.0.8 16-05-2023
 
 
             val end = Paragraph("Anticipating healthy business relation with your esteemed organization.", grayFront)
@@ -640,13 +747,20 @@ class ViewAllQuotListFragment : BaseFragment(), View.OnClickListener {
             end.spacingAfter = 4f
             document.add(end)
 
+
+
             val thanks = Paragraph("\nThanks & Regards,", fontB1)
             thanks.alignment = Element.ALIGN_LEFT
-            thanks.spacingAfter = 2f
+            thanks.spacingAfter = 4f
             document.add(thanks)
 
-            //val companyName = Paragraph("EURO PANEL PRODUCTS LIMITED", fontB1)
-            val companyName = Paragraph(getString(R.string.app_name), fontB1)
+            // Hardcoded for EuroBond
+            var companyName = Paragraph()
+            if(Pref.IsShowQuotationFooterforEurobond){
+                 companyName = Paragraph("EURO PANEL PRODUCTS LIMITED", fontB1)
+            }else{
+                 companyName = Paragraph(getString(R.string.app_name), fontB1)
+            }
             companyName.alignment = Element.ALIGN_LEFT
             companyName.spacingAfter = 2f
             document.add(companyName)
@@ -662,29 +776,40 @@ class ViewAllQuotListFragment : BaseFragment(), View.OnClickListener {
             document.add(salesmanDes)
 
             //val salesmanphone = Paragraph(addQuotEditResult.salesman_phone_no, fontB1)
-            val salesmanphone = Paragraph(addQuotEditResult.salesman_login_id, fontB1)
+            val salesmanphone = Paragraph("Mob : " +addQuotEditResult.salesman_login_id, fontB1)
             salesmanphone.alignment = Element.ALIGN_LEFT
             salesmanphone.spacingAfter =  2f
             document.add(salesmanphone)
 
             val salesmanemail = Paragraph("Email : "+addQuotEditResult.salesman_email, fontB1)
             salesmanemail.alignment = Element.ALIGN_LEFT
-            salesmanemail.spacingAfter =  2f
+            salesmanemail.spacingAfter =  1f
             document.add(salesmanemail)
 
             val xxxx = Paragraph("", font)
             xxxx.spacingAfter = 4f
-            document.add(xxxx)
+            //document.add(xxxx)
 
-            //val euroHead = Paragraph("\nEURO PANEL PRODUCTS LIMITED", font)
-            val euroHead = Paragraph("\n"+getString(R.string.app_name), font)
+            // Hardcoded for EuroBond
+            var euroHead = Paragraph()
+            if(Pref.IsShowQuotationFooterforEurobond){
+                euroHead = Paragraph("\nEURO PANEL PRODUCTS LIMITED", font)
+            }else{
+                euroHead = Paragraph("\n"+getString(R.string.app_name), font)
+            }
+
             euroHead.alignment = Element.ALIGN_LEFT
             //document.add(euroHead)
 
             //strip_line//bar//ics
             //Hardcoded for EuroBond
-//            val bm1: Bitmap = BitmapFactory.decodeResource(resources, R.drawable.ics_image)
-            val bm1: Bitmap = BitmapFactory.decodeResource(resources, R.drawable.bar)
+            var bm1: Bitmap
+            if(Pref.IsShowQuotationFooterforEurobond){
+                 bm1 = BitmapFactory.decodeResource(resources, R.drawable.footer_icon_euro)
+            }else{
+                 bm1 = BitmapFactory.decodeResource(resources, R.drawable.ics_image)
+            }
+//            val bm1: Bitmap = BitmapFactory.decodeResource(resources, R.drawable.bar)
             val bitmap1 = Bitmap.createScaledBitmap(bm1, 850, 120, true)
             val stream1 = ByteArrayOutputStream()
             bitmap1.compress(Bitmap.CompressFormat.PNG, 100, stream1)
@@ -803,19 +928,31 @@ class ViewAllQuotListFragment : BaseFragment(), View.OnClickListener {
                     (mContext as DashboardActivity).showSnackMessage(getString(R.string.something_went_wrong))
                 }
             }*/
+            // Hardcoded for EuroBon
 
+            var m = Mail()
+            var toArr = arrayOf("")
 
-            val m = Mail("eurobondacp02@gmail.com", "nuqfrpmdjyckkukl")
-//            val m = Mail("saheli.bhattacharjee@indusnet.co.in", "@Intsaheli22")
-            val toArr = arrayOf("saheli.bhattacharjee@indusnet.co.in","suman.bachar@indusnet.co.in","suman.roy@indusnet.co.in")
-//            val toArr = arrayOf("sales1@eurobondacp.com", "sales@eurobondacp.com")
+            if(Pref.IsShowQuotationFooterforEurobond){
+                m = Mail("eurobondacp02@gmail.com", "nuqfrpmdjyckkukl")
+                toArr = arrayOf("sales1@eurobondacp.com", "sales@eurobondacp.com")
+            }else{
+                //m = Mail("saheli.bhattacharjee@indusnet.co.in", "@Intsaheli22")
+                m = Mail("suman.bachar@indusnet.co.in", "pgppbcavlmmhgpxw")
+                toArr = arrayOf("saheli.bhattacharjee@indusnet.co.in","suman.bachar@indusnet.co.in","suman.roy@indusnet.co.in")
+            }
+
             m.setTo(toArr)
             m.setFrom("TEAM");
             m.setSubject("Quotation for $shop_name created on dated ${addQuotEditResult.save_date_time!!.split(" ").get(0)}.")
             m.setBody("Hello Team,  \n Please find attached Quotation No. ${addQuotEditResult.quotation_number} Dated ${addQuotEditResult.save_date_time!!.split(" ").get(0)} for $shop_name \n\n\n Regards \n${Pref.user_name}.")
             doAsync {
-                val fileUrl = Uri.parse(sendingPath)
-                val i = m.send(fileUrl.path)
+                try{
+                    val fileUrl = Uri.parse(sendingPath)
+                    val i = m.send(fileUrl.path)
+                }catch (ex:Exception){
+                    ex.printStackTrace()
+                }
                 uiThread {
                     progress_wheel.stopSpinning()
                     openDialogPopup("Hi ${Pref.user_name} !","Email was sent successfully.")
@@ -832,32 +969,32 @@ class ViewAllQuotListFragment : BaseFragment(), View.OnClickListener {
                     }*/
                 }
             }
-       /*     if (!TextUtils.isEmpty(sendingPath)) {
-                try {
-                    val shareIntent = Intent(Intent.ACTION_SEND)
-                    shareIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                    shareIntent.setType("vnd.android.cursor.item/email");
-                    shareIntent.putExtra(Intent.EXTRA_EMAIL, arrayOf<String>("saheli.bhattacharjee@indusnet.co.in"))
-                    shareIntent.putExtra(Intent.EXTRA_SUBJECT, "Quotation for $shop_name created on dated ${addQuotEditResult.save_date_time!!.split(" ").get(0)}.")
-                    shareIntent.putExtra(Intent.EXTRA_TEXT,  "Hello Team,  \n Please find attached Quotation No. ${addQuotEditResult.quotation_number} Dated ${addQuotEditResult.save_date_time!!.split(" ").get(0)} for $shop_name \n\n\n Regards \n${Pref.user_name}.")
+            /*     if (!TextUtils.isEmpty(sendingPath)) {
+                     try {
+                         val shareIntent = Intent(Intent.ACTION_SEND)
+                         shareIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                         shareIntent.setType("vnd.android.cursor.item/email");
+                         shareIntent.putExtra(Intent.EXTRA_EMAIL, arrayOf<String>("saheli.bhattacharjee@indusnet.co.in"))
+                         shareIntent.putExtra(Intent.EXTRA_SUBJECT, "Quotation for $shop_name created on dated ${addQuotEditResult.save_date_time!!.split(" ").get(0)}.")
+                         shareIntent.putExtra(Intent.EXTRA_TEXT,  "Hello Team,  \n Please find attached Quotation No. ${addQuotEditResult.quotation_number} Dated ${addQuotEditResult.save_date_time!!.split(" ").get(0)} for $shop_name \n\n\n Regards \n${Pref.user_name}.")
 
-                    val fileUrl = Uri.parse(sendingPath)
-                    val file = File(fileUrl.path)
-                    val uri: Uri = FileProvider.getUriForFile(mContext, context!!.applicationContext.packageName.toString() + ".provider", file)
+                         val fileUrl = Uri.parse(sendingPath)
+                         val file = File(fileUrl.path)
+                         val uri: Uri = FileProvider.getUriForFile(mContext, context!!.applicationContext.packageName.toString() + ".provider", file)
 
-                    if (!file.exists() || !file.canRead()) {
-                        Toast.makeText(getContext(), "Attachment Error", Toast.LENGTH_SHORT).show();
-                        return;
-                    }
-                    shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                    shareIntent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
-                    shareIntent.putExtra(Intent.EXTRA_STREAM,uri)
-                    startActivity(shareIntent)
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    (mContext as DashboardActivity).showSnackMessage(getString(R.string.something_went_wrong))
-                }
-            }*/
+                         if (!file.exists() || !file.canRead()) {
+                             Toast.makeText(getContext(), "Attachment Error", Toast.LENGTH_SHORT).show();
+                             return;
+                         }
+                         shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                         shareIntent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+                         shareIntent.putExtra(Intent.EXTRA_STREAM,uri)
+                         startActivity(shareIntent)
+                     } catch (e: Exception) {
+                         e.printStackTrace()
+                         (mContext as DashboardActivity).showSnackMessage(getString(R.string.something_went_wrong))
+                     }
+                 }*/
 
         }catch (ex: Exception){
             progress_wheel.stopSpinning()
@@ -867,25 +1004,5 @@ class ViewAllQuotListFragment : BaseFragment(), View.OnClickListener {
         }
 
 
-    }
-
-    fun openDialogPopup(header:String,text:String){
-        val simpleDialog = Dialog(mContext)
-        simpleDialog.setCancelable(false)
-        simpleDialog.getWindow()!!.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
-        simpleDialog.setContentView(R.layout.dialog_ok_imei)
-        val dialogHeader = simpleDialog.findViewById(R.id.dialog_yes_header) as AppCustomTextView
-        val dialogBody = simpleDialog.findViewById(R.id.dialog_yes_body) as AppCustomTextView
-        dialogHeader.text = header
-        dialogBody.text = text
-        val dialogYes = simpleDialog.findViewById(R.id.tv_dialog_yes) as AppCustomTextView
-        dialogYes.setOnClickListener({ view ->
-            simpleDialog.cancel()
-        })
-        simpleDialog.show()
-    }
-
-    fun updateView(){
-        quotListCall(shop_id)
     }
 }

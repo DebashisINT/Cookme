@@ -1,6 +1,7 @@
 package com.cookmefsm.features.performance.api
 
 import com.cookmefsm.base.BaseResponse
+import com.cookmefsm.features.performance.model.UpdateGpsInputListParamsModel
 import com.cookmefsm.features.performance.model.UpdateGpsInputParamsModel
 import io.reactivex.Observable
 
@@ -10,5 +11,8 @@ import io.reactivex.Observable
 class UpdateGpsStatusRepo(val apiService: UpdateGpsStatusApi) {
     fun updateGpsStatus(updateGps: UpdateGpsInputParamsModel): Observable<BaseResponse> {
         return apiService.updateGpsStatus(updateGps)
+    }
+    fun updateGpsStatuswithList(updateGpslist: UpdateGpsInputListParamsModel): Observable<BaseResponse> {
+        return apiService.updateGpsStatusWithList(updateGpslist)
     }
 }

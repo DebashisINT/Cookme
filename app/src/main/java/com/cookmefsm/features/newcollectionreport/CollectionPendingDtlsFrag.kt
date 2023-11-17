@@ -34,12 +34,13 @@ import com.cookmefsm.features.shopdetail.presentation.model.addcollection.AddCol
 import com.cookmefsm.features.viewAllOrder.api.addorder.AddOrderRepoProvider
 import com.cookmefsm.features.viewAllOrder.model.AddOrderInputParamsModel
 import com.cookmefsm.features.viewAllOrder.model.AddOrderInputProductList
-import com.elvishew.xlog.XLog
+
 import com.pnikosis.materialishprogress.ProgressWheel
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.schedulers.Schedulers
 import org.jetbrains.anko.doAsync
 import org.jetbrains.anko.uiThread
+import timber.log.Timber
 import java.util.*
 import kotlin.collections.ArrayList
 
@@ -342,6 +343,10 @@ class CollectionPendingDtlsFrag : BaseFragment(), View.OnClickListener {
             product.scheme_rate = list[i].scheme_rate
             product.total_scheme_price = list[i].total_scheme_price
             product.MRP = list[i].MRP
+
+            //mantis 25601
+            product.order_mrp = list[i].order_mrp
+            product.order_discount = list[i].order_discount
             productList.add(product)
         }
 
@@ -599,6 +604,9 @@ class CollectionPendingDtlsFrag : BaseFragment(), View.OnClickListener {
 
         addShopData.purpose=mAddShopDBModelEntity.purpose
 
+        addShopData.GSTN_Number=mAddShopDBModelEntity.gstN_Number
+        addShopData.ShopOwner_PAN=mAddShopDBModelEntity.shopOwner_PAN
+
 
         callAddShopApi(addShopData, mAddShopDBModelEntity.shopImageLocalPath, shop_id, collection_id, amount, collection,
             currentDateForShopActi, desc, billId, mAddShopDBModelEntity.doc_degree, orderId, collectionDetails)
@@ -621,9 +629,9 @@ class CollectionPendingDtlsFrag : BaseFragment(), View.OnClickListener {
 
         val index = addShop.shop_id!!.indexOf("_")
         if (shop_imgPath != null)
-            XLog.d("shop image path=======> $shop_imgPath")
+            Timber.d("shop image path=======> $shop_imgPath")
         if (degree_imgPath != null)
-            XLog.d("doctor degree image path=======> $degree_imgPath")
+            Timber.d("doctor degree image path=======> $degree_imgPath")
 
         if (TextUtils.isEmpty(shop_imgPath) && TextUtils.isEmpty(degree_imgPath)) {
             val repository = AddShopRepositoryProvider.provideAddShopWithoutImageRepository()
@@ -633,7 +641,7 @@ class CollectionPendingDtlsFrag : BaseFragment(), View.OnClickListener {
                     .subscribeOn(Schedulers.io())
                     .subscribe({ result ->
                         val addShopResult = result as AddShopResponse
-                        XLog.d("syncShopFromShopList : " + ", SHOP: " + addShop.shop_name + ", RESPONSE:" + result.message)
+                        Timber.d("syncShopFromShopList : " + ", SHOP: " + addShop.shop_name + ", RESPONSE:" + result.message)
                         when (addShopResult.status) {
                             NetworkConstant.SUCCESS -> {
                                 AppDatabase.getDBInstance()!!.addShopEntryDao().updateIsUploaded(true, addShop.shop_id)
@@ -651,7 +659,7 @@ class CollectionPendingDtlsFrag : BaseFragment(), View.OnClickListener {
 
                             }
                             NetworkConstant.DUPLICATE_SHOP_ID -> {
-                                XLog.d("DuplicateShop : " + ", SHOP: " + addShop.shop_name)
+                                Timber.d("DuplicateShop : " + ", SHOP: " + addShop.shop_name)
                                 AppDatabase.getDBInstance()!!.addShopEntryDao().updateIsUploaded(true, addShop.shop_id)
                                 progress_wheel.stopSpinning()
                                 (mContext as DashboardActivity).showSnackMessage(addShopResult.message!!)
@@ -685,7 +693,7 @@ class CollectionPendingDtlsFrag : BaseFragment(), View.OnClickListener {
                         (mContext as DashboardActivity).showSnackMessage("Collection added successfully")
                         isShopRegistrationInProcess = false
                         if (error != null)
-                            XLog.d("syncShopFromShopList : " + ", SHOP: " + addShop.shop_name + error.localizedMessage)
+                            Timber.d("syncShopFromShopList : " + ", SHOP: " + addShop.shop_name + error.localizedMessage)
                     })
             )
         }
@@ -697,7 +705,7 @@ class CollectionPendingDtlsFrag : BaseFragment(), View.OnClickListener {
                     .subscribeOn(Schedulers.io())
                     .subscribe({ result ->
                         val addShopResult = result as AddShopResponse
-                        XLog.d("syncShopFromShopList : " + ", SHOP: " + addShop.shop_name + ", RESPONSE:" + result.message)
+                        Timber.d("syncShopFromShopList : " + ", SHOP: " + addShop.shop_name + ", RESPONSE:" + result.message)
                         when (addShopResult.status) {
                             NetworkConstant.SUCCESS -> {
                                 AppDatabase.getDBInstance()!!.addShopEntryDao().updateIsUploaded(true, addShop.shop_id)
@@ -716,7 +724,7 @@ class CollectionPendingDtlsFrag : BaseFragment(), View.OnClickListener {
 
                             }
                             NetworkConstant.DUPLICATE_SHOP_ID -> {
-                                XLog.d("DuplicateShop : " + ", SHOP: " + addShop.shop_name)
+                                Timber.d("DuplicateShop : " + ", SHOP: " + addShop.shop_name)
                                 AppDatabase.getDBInstance()!!.addShopEntryDao().updateIsUploaded(true, addShop.shop_id)
                                 progress_wheel.stopSpinning()
                                 (mContext as DashboardActivity).showSnackMessage(addShopResult.message!!)
@@ -750,7 +758,7 @@ class CollectionPendingDtlsFrag : BaseFragment(), View.OnClickListener {
                         (mContext as DashboardActivity).showSnackMessage("Collection added successfully")
                         isShopRegistrationInProcess = false
                         if (error != null)
-                            XLog.d("syncShopFromShopList : " + ", SHOP: " + addShop.shop_name + error.localizedMessage)
+                            Timber.d("syncShopFromShopList : " + ", SHOP: " + addShop.shop_name + error.localizedMessage)
                     })
             )
         }

@@ -11,6 +11,7 @@ public interface AppConstant {
     String SHOP_TABLE_ALL_TEAM = "shop_detail_all_team";
     String ATTENDANCE_TABLE = "attendance";
     String SHOP_ACTIVITY = "shop_activity";
+    String SHOP_VISIT_REVISIT_WHATSAPP_STATUS = "shop_visit_revisit_whatsapp_status";
     String GPS_STATUS = "gps_status";
     String STATE_TABLE = "state_list";
     String MARKETING_CATEGORY_TABLE = "marketing_category";
@@ -144,6 +145,13 @@ public interface AppConstant {
     String TBL_DIST_WISE_ORD_REPORT = "tbl_dist_wise_ord_report";
 
     String NEW_GPS_STATUS = "new_gps_status";
+
+    String SHOP_EXTRA_CONTACT = "shop_extra_contact";
+
+    String PRODUCT_ONLINE_RATE_TEMP_TABLE = "product_online_rate_temp_table";
+
+
+    String TASK_ACTIVITY = "task_activity";
 
 
 }

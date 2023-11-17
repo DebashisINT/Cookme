@@ -11,6 +11,8 @@ import com.google.gson.annotations.SerializedName;
 /**
  * Created by sayantan.sarkar on 2/11/17.
  */
+// Revision History
+// 1.0 SHOP_TABLE  AppV 4.0.6  shopStatusUpdate add col
 @Entity(tableName = SHOP_TABLE)
 public class AddShopDBModelEntity {
 
@@ -276,6 +278,52 @@ public class AddShopDBModelEntity {
 
     @ColumnInfo(name = "isShopDuplicate")
     private boolean isShopDuplicate = false;
+
+    @ColumnInfo(name = "isOwnshop")
+    private boolean isOwnshop = true;
+    // 3.0   AppV 4.0.6  shopStatusUpdate table added
+    @ColumnInfo(name = "shopStatusUpdate")
+    private String shopStatusUpdate = "1";
+
+    public String getShopStatusUpdate() {
+        return shopStatusUpdate;
+    }
+
+    public void setShopStatusUpdate(String shopStatusUpdate) {
+        this.shopStatusUpdate = shopStatusUpdate;
+    }
+
+    public String getGSTN_Number() {
+        return GSTN_Number;
+    }
+
+
+
+    @ColumnInfo(name = "GSTN_Number")
+    private String GSTN_Number = null;
+
+    public void setGSTN_Number(String GSTN_Number) {
+        this.GSTN_Number = GSTN_Number;
+    }
+
+
+    public String getShopOwner_PAN() {
+        return ShopOwner_PAN;
+    }
+
+    public void setShopOwner_PAN(String shopOwner_PAN) {
+        ShopOwner_PAN = shopOwner_PAN;
+    }
+
+    @ColumnInfo(name = "ShopOwner_PAN")
+    private String ShopOwner_PAN =null;
+
+    public boolean isOwnshop() {
+        return isOwnshop;
+    }
+    public void setOwnshop(boolean ownshop) {
+        isOwnshop = ownshop;
+    }
 
     public boolean getIsShopDuplicate() {
         return isShopDuplicate;

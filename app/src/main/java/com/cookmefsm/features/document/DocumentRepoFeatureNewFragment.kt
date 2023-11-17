@@ -18,7 +18,7 @@ import com.cookmefsm.features.dashboard.presentation.DashboardActivity
 import com.cookmefsm.features.document.api.DocumentRepoProvider
 import com.cookmefsm.features.document.model.DocumentTypeResponseModel
 import com.cookmefsm.widgets.AppCustomTextView
-import com.elvishew.xlog.XLog
+
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.schedulers.Schedulers
 import org.jetbrains.anko.doAsync

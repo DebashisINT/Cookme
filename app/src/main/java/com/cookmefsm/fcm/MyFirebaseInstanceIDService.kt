@@ -8,7 +8,7 @@ import com.cookmefsm.app.utils.AppUtils
 import com.cookmefsm.base.BaseResponse
 import com.cookmefsm.base.presentation.BaseActivity
 import com.cookmefsm.fcm.api.UpdateDeviceTokenRepoProvider
-import com.elvishew.xlog.XLog
+
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.schedulers.Schedulers
 import org.jetbrains.anko.doAsync

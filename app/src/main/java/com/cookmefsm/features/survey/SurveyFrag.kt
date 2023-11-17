@@ -10,6 +10,7 @@ import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -42,7 +43,7 @@ import com.cookmefsm.features.photoReg.api.GetUserListPhotoRegProvider
 import com.cookmefsm.features.photoReg.model.ImageResponse
 import com.cookmefsm.features.survey.api.SurveyDataProvider
 import com.cookmefsm.widgets.AppCustomTextView
-import com.elvishew.xlog.XLog
+
 import com.pnikosis.materialishprogress.ProgressWheel
 import com.themechangeapp.pickimage.PermissionHelper
 import io.reactivex.android.schedulers.AndroidSchedulers
@@ -59,6 +60,7 @@ class SurveyFrag: BaseFragment(), View.OnClickListener {
     lateinit var ll_root: LinearLayout
     lateinit var progress_wheel: ProgressWheel
     lateinit var tv_surveyFromType:AppCustomTextView
+    lateinit var tv_survey_from_type:TextView
     lateinit var iv_arrow_dd:ImageView
     lateinit var btnSubmit:Button
 
@@ -103,12 +105,16 @@ class SurveyFrag: BaseFragment(), View.OnClickListener {
     private fun initView(view: View?) {
         ll_root=view?.findViewById(R.id.lll_root_qa) as LinearLayout
         progress_wheel=view?.findViewById(R.id.progress_wheel) as ProgressWheel
+        tv_survey_from_type = view?.findViewById(R.id.survey_from_typeSpinner) as TextView
         tv_surveyFromType = view?.findViewById(R.id.survey_from_typeSpinner) as AppCustomTextView
         iv_arrow_dd =  view?.findViewById(R.id.iv_dropd) as ImageView
         btnSubmit =  view?.findViewById(R.id.btn_frag_survey_submit) as Button
         btnSubmit.visibility=View.GONE
         btnSubmit.setOnClickListener(this)
+        iv_arrow_dd.setOnClickListener(this)
 
+        tv_survey_from_type.text = "Select"+ Pref.surveytext +"Form Type"
+        tv_surveyFromType.text = "Select"+ Pref.surveytext +"Form Type"
         initPermissionCheckFirstTime()
         getQuestion()
     }
@@ -151,11 +157,14 @@ class SurveyFrag: BaseFragment(), View.OnClickListener {
     }
 
     fun filterData(){
-        var listWithID :ArrayList<Question_list> = ArrayList()
-        listWithID= qList.filter { it.question_for_shoptype_id!!.toInt() == mAddShopDataObj!!.type.toInt() } as ArrayList<Question_list>
-        var uniqGr = listWithID.map { it.group_name }.distinct()
-        formSelectionDD(uniqGr!! as List<String>,listWithID)
-
+        try{
+            var listWithID :ArrayList<Question_list> = ArrayList()
+            listWithID= qList.filter { it.question_for_shoptype_id!!.toInt() == mAddShopDataObj!!.type.toInt() } as ArrayList<Question_list>
+            var uniqGr = listWithID.map { it.group_name }.distinct()
+            formSelectionDD(uniqGr!! as List<String>,listWithID)
+        }catch (ex:Exception) {
+            ex.printStackTrace()
+        }
     }
 
     fun formSelectionDD(uniqGr:List<String>,listWithID:ArrayList<Question_list>){
@@ -460,6 +469,19 @@ class SurveyFrag: BaseFragment(), View.OnClickListener {
                 }
                 getQuestionSubmit(saveQAModel)
             }
+
+            R.id.iv_dropd ->{
+                var listWithID :ArrayList<Question_list> = ArrayList()
+                listWithID= qList.filter { it.question_for_shoptype_id!!.toInt() == mAddShopDataObj!!.type.toInt() } as ArrayList<Question_list>
+                var uniqGr = listWithID.map { it.group_name }.distinct()
+                formSelectionDD(uniqGr!! as List<String>,listWithID)
+                SurveyFromListDialog.newInstance(uniqGr as ArrayList<String>) {
+                    ll_root.removeAllViewsInLayout()
+                    tv_surveyFromType.text = it
+                    filterDataByGr(listWithID.filter { it.group_name.equals(tv_surveyFromType.text.toString()) })
+                }.show((mContext as DashboardActivity).supportFragmentManager, "")
+
+            }
         }
     }
 
@@ -551,6 +573,20 @@ class SurveyFrag: BaseFragment(), View.OnClickListener {
 
     private var permissionUtils: PermissionUtils? = null
     private fun initPermissionCheckFirstTime() {
+
+        //begin mantis id 26741 Storage permission updation Suman 22-08-2023
+        var permissionList = arrayOf<String>( Manifest.permission.CAMERA)
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU){
+            permissionList += Manifest.permission.READ_MEDIA_IMAGES
+            permissionList += Manifest.permission.READ_MEDIA_AUDIO
+            permissionList += Manifest.permission.READ_MEDIA_VIDEO
+        }else{
+            permissionList += Manifest.permission.WRITE_EXTERNAL_STORAGE
+            permissionList += Manifest.permission.READ_EXTERNAL_STORAGE
+        }
+//end mantis id 26741 Storage permission updation Suman 22-08-2023
+
         permissionUtils = PermissionUtils(mContext as Activity, object : PermissionUtils.OnPermissionListener {
             override fun onPermissionGranted() {
 
@@ -560,7 +596,7 @@ class SurveyFrag: BaseFragment(), View.OnClickListener {
                 (mContext as DashboardActivity).showSnackMessage(getString(R.string.accept_permission))
             }
 
-        }, arrayOf<String>(Manifest.permission.CAMERA, Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE))
+        },permissionList)// arrayOf<String>(Manifest.permission.CAMERA, Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE))
     }
 
     fun showPictureDialog() {

@@ -1,12 +1,17 @@
 package com.cookmefsm.features.splash.presentation
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.Activity
+import android.app.Dialog
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
+import android.location.Location
 import android.location.LocationManager
 import android.net.Uri
 import android.os.*
@@ -21,6 +26,7 @@ import com.cookmefsm.app.NetworkConstant
 import com.cookmefsm.app.Pref
 import com.cookmefsm.app.uiaction.DisplayAlert
 import com.cookmefsm.app.utils.AppUtils
+import com.cookmefsm.app.utils.FileLoggingTree
 import com.cookmefsm.app.utils.PermissionUtils
 import com.cookmefsm.app.utils.Toaster
 import com.cookmefsm.base.presentation.BaseActivity
@@ -30,16 +36,22 @@ import com.cookmefsm.features.commondialog.presentation.CommonDialogClickListene
 import com.cookmefsm.features.commondialogsinglebtn.CommonDialogSingleBtn
 import com.cookmefsm.features.commondialogsinglebtn.OnDialogClickListener
 import com.cookmefsm.features.dashboard.presentation.DashboardActivity
+import com.cookmefsm.features.location.LocationWizard
+import com.cookmefsm.features.location.SingleShotLocationProvider
 import com.cookmefsm.features.login.presentation.LoginActivity
 import com.cookmefsm.features.splash.presentation.api.VersionCheckingRepoProvider
 import com.cookmefsm.features.splash.presentation.model.VersionCheckingReponseModel
-import com.elvishew.xlog.XLog
-import com.google.android.gms.tasks.OnSuccessListener
-import com.google.firebase.messaging.FirebaseMessaging
+import com.cookmefsm.widgets.AppCustomTextView
+
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.schedulers.Schedulers
 import kotlinx.android.synthetic.main.activity_splash.*
+import kotlinx.android.synthetic.main.fragment_new_order_screen_activity.*
 import net.alexandroid.gps.GpsStatusDetector
+import org.jetbrains.anko.doAsync
+import org.jetbrains.anko.uiThread
+import timber.log.Timber
+import java.io.File
 import java.util.*
 import kotlin.system.exitProcess
 
@@ -47,7 +59,9 @@ import kotlin.system.exitProcess
 /**
  * Created by Pratishruti on 26-10-2017.
  */
-
+// Revision History
+// 1.0 SplashActivity AppV 4.0.7 Saheli    02/03/2023 Timber Log Implementation
+// 2.0 SplashActivity AppV 4.0.7 Suman    21/03/2023 Location rectification for previous location 25760
 class SplashActivity : BaseActivity(), GpsStatusDetector.GpsStatusDetectorCallBack {
 
     private var isLoginLoaded: Boolean = false
@@ -60,23 +74,45 @@ class SplashActivity : BaseActivity(), GpsStatusDetector.GpsStatusDetectorCallBa
     data class PermissionDetails(var permissionName: String, var permissionTag: Int)
 
 //test
+    @SuppressLint("SuspiciousIndentation", "WrongConstant")
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_splash)
+
+   /* var fir:File = File(applicationContext.filesDir,"OPLOG")
+    val filename = "OPLOG"
+    val fileContents = "Hello world! ${AppUtils.getCurrentDateTime()}"
+    applicationContext.openFileOutput(filename, Context.MODE_PRIVATE).use {
+        it.write(fileContents.toByteArray())
+    }
+    applicationContext.deleteFile(filename)
+
+    applicationContext.openFileOutput(filename, Context.MODE_PRIVATE).use {
+        it.write(fileContents.toByteArray())
+    }*/
+
+    /*FileLoggingTree.context = this.applicationContext*/
+
+    Timber.plant(Timber.DebugTree())
+    Timber.plant(FileLoggingTree())
+
+
+    //startActivity( Intent(Settings.ACTION_BATTERY_SAVER_SETTINGS))
+
+
         //Handler().postDelayed({ goToNextScreen() }, 2000)
-    println("splash " + Pref.user_id);
         //Code by wasim
         // this is for test purpose timing seeting
         // AlarmReceiver.setAlarm(this, 17, 45, 2017)
 
-        FirebaseMessaging.getInstance().subscribeToTopic("newss").addOnSuccessListener(object : OnSuccessListener<Void?> {
-            override fun onSuccess(aVoid: Void?) {
-                //Toast.makeText(applicationContext, "Success", Toast.LENGTH_LONG).show()
-            }
-        })
+    /*FirebaseMessaging.getInstance().subscribeToTopic("newss").addOnSuccessListener(object : OnSuccessListener<Void?> {
+        override fun onSuccess(aVoid: Void?) {
+            //Toast.makeText(applicationContext, "Success", Toast.LENGTH_LONG).show()
+        }
+    })*/
 
-   /* val email = Intent(Intent.ACTION_SENDTO)
+    /* val email = Intent(Intent.ACTION_SENDTO)
     email.setData(Uri.parse("mailto:"))
     email.putExtra(Intent.EXTRA_EMAIL, arrayOf<String>("saheli.bhattacharjee@indusnet.co.in"))
     email.putExtra(Intent.EXTRA_SUBJECT, "sub")
@@ -92,7 +128,7 @@ class SplashActivity : BaseActivity(), GpsStatusDetector.GpsStatusDetectorCallBa
         progress_wheel.stopSpinning()
 
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
             if (Pref.isLocationPermissionGranted)
                 initPermissionCheck()
             else {
@@ -116,6 +152,34 @@ class SplashActivity : BaseActivity(), GpsStatusDetector.GpsStatusDetectorCallBa
             checkGPSProvider()
         }
         permissionCheck()
+    }
+
+
+    fun checkBatteryOptiSettings(){
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val intent = Intent()
+            val packageName = packageName
+            val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
+            if (!pm.isIgnoringBatteryOptimizations(packageName)) {
+
+                //Toaster.msgLong(this,"Please Don't optimize your battery for this app.")
+                CommonDialog.getInstance(getString(R.string.app_name), "You must select the option 'Don't Optimise' to use this app. " ,
+                    "Cancel", "Ok", false, object : CommonDialogClickListener {
+                        override fun onLeftClick() {
+                           finish()
+                        }
+
+                        override fun onRightClick(editableData: String) {
+                            goTONextActi()
+                        }
+
+                    }).show(supportFragmentManager, "")
+                println("battery dialog scr")
+            } else{
+                println("battery next scr")
+                goTONextActi()
+            }
+        }
     }
 
 
@@ -167,10 +231,14 @@ class SplashActivity : BaseActivity(), GpsStatusDetector.GpsStatusDetectorCallBa
         permList = (permList + permListDenied).toMutableList()
 
         for(i in 0..permList.size-1){
-            XLog.d("Permission Name"+permList.get(i).permissionName + " Status : Granted")
+            // 1.0 SplashActivity AppV 4.0.7 Timber Log Implementation
+//            XLog.d("Permission Name"+permList.get(i).permissionName + " Status : Granted")
+            Timber.d("Permission Name"+permList.get(i).permissionName + " Status : Granted")
         }
         for(i in 0..permListDenied.size-1){
-            XLog.d("Permission Name"+permListDenied.get(i).permissionName + " Status : Denied")
+            // 1.0 SplashActivity AppV 4.0.7 Timber Log Implementation
+//            XLog.d("Permission Name"+permListDenied.get(i).permissionName + " Status : Denied")
+            Timber.d("Permission Name"+permListDenied.get(i).permissionName + " Status : Denied")
         }
     }
 
@@ -291,18 +359,26 @@ class SplashActivity : BaseActivity(), GpsStatusDetector.GpsStatusDetectorCallBa
                         .subscribe({ result ->
                             progress_wheel.stopSpinning()
                             val response = result as VersionCheckingReponseModel
-
-                            XLog.d("VERSION CHECKING RESPONSE: " + "STATUS: " + response.status + ", MESSAGE:" + result.message)
+                            // 1.0 SplashActivity AppV 4.0.7 Timber Log Implementation
+//                            XLog.d("VERSION CHECKING RESPONSE: " + "STATUS: " + response.status + ", MESSAGE:" + result.message)
+                            Timber.d("VERSION CHECKING RESPONSE: " + "STATUS: " + response.status + ", MESSAGE:" + result.message)
 
                             if (response.status == NetworkConstant.SUCCESS) {
 
-                                XLog.d("===========VERSION CHECKING SUCCESS RESPONSE===========")
+                             /*   XLog.d("===========VERSION CHECKING SUCCESS RESPONSE===========")
                                 XLog.d("min version=====> " + response.min_req_version)
                                 XLog.d("store version=====> " + response.play_store_version)
                                 XLog.d("mandatory msg======> " + response.mandatory_msg)
                                 XLog.d("optional msg=====> " + response.optional_msg)
                                 XLog.d("apk url======> " + response.apk_url)
-                                XLog.d("=======================================================")
+                                XLog.d("=======================================================")*/
+                                Timber.d("===========VERSION CHECKING SUCCESS RESPONSE===========")
+                                Timber.d("min version=====> " + response.min_req_version)
+                                Timber.d("store version=====> " + response.play_store_version)
+                                Timber.d("mandatory msg======> " + response.mandatory_msg)
+                                Timber.d("optional msg=====> " + response.optional_msg)
+                                Timber.d("apk url======> " + response.apk_url)
+                                Timber.d("=======================================================")
 
                                 versionChecking(response)
                                 //goToNextScreen()
@@ -313,7 +389,8 @@ class SplashActivity : BaseActivity(), GpsStatusDetector.GpsStatusDetectorCallBa
 
                         }, { error ->
                             isApiInitiated = false
-                            XLog.d("VERSION CHECKING ERROR: " + "MESSAGE:" + error.message)
+//                            XLog.d("VERSION CHECKING ERROR: " + "MESSAGE:" + error.message)
+                            Timber.d("VERSION CHECKING ERROR: " + "MESSAGE:" + error.message) // 1.0 SplashActivity AppV 4.0.7 Timber Log Implementation
                             error.printStackTrace()
                             progress_wheel.stopSpinning()
                             goToNextScreen()
@@ -339,6 +416,36 @@ class SplashActivity : BaseActivity(), GpsStatusDetector.GpsStatusDetectorCallBa
             val currentVersion = Integer.parseInt(BuildConfig.VERSION_NAME.replace(".", ""))
 
             when {
+
+                storeVersion.toInt()-currentVersion.toInt() > 2 -> {
+
+                    val simpleDialogV = Dialog(this)
+                    simpleDialogV.setCancelable(false)
+                    simpleDialogV.getWindow()!!.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+                    simpleDialogV.setContentView(R.layout.dialog_message)
+                    val dialogHeaderV =
+                        simpleDialogV.findViewById(R.id.dialog_message_header_TV) as AppCustomTextView
+                    val dialog_yes_no_headerTVV =
+                        simpleDialogV.findViewById(R.id.dialog_message_headerTV) as AppCustomTextView
+                    if (Pref.user_name != null) {
+                        dialog_yes_no_headerTVV.text = "Hi " + Pref.user_name!! + "!"
+                    } else {
+                        dialog_yes_no_headerTVV.text = "Hi User" + "!"
+                    }
+                    dialogHeaderV.text = "You are using lower Version of Application. Please Uninstall this and Install Latest version from Playstore."
+
+                    val dialogYesV = simpleDialogV.findViewById(R.id.tv_message_ok) as AppCustomTextView
+                    dialogYesV.text = "Uninstall"
+                    dialogYesV.setOnClickListener({ view ->
+                        simpleDialogV.cancel()
+                        dialogYesV.text = "Please wait......"
+                        val intent = Intent(Intent.ACTION_DELETE)
+                        intent.data = Uri.parse("package:${this.getPackageName()}")
+                        startActivity(intent)
+                    })
+                    simpleDialogV.show()
+                }
+
                 currentVersion >= storeVersion -> goToNextScreen()
                 currentVersion in minVersion until storeVersion -> {
                     CommonDialog.getInstance("New Update", response.optional_msg!!,
@@ -444,14 +551,60 @@ class SplashActivity : BaseActivity(), GpsStatusDetector.GpsStatusDetectorCallBa
 
 
     fun goTONextActi(){
+
+        /*val intent = Intent()
+        val packageName = packageName
+        val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
+        var t=pm.isIgnoringBatteryOptimizations(packageName)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !pm.isIgnoringBatteryOptimizations(packageName)) {
+            Handler().postDelayed(Runnable {
+                println("battery hit 175")
+                startActivityForResult( Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS),175) }, 1000)
+            return
+        }*/
+
         if (TextUtils.isEmpty(Pref.user_id) || Pref.user_id.isNullOrBlank()) {
             if (!isLoginLoaded) {
                 isLoginLoaded = true
-                startActivity(Intent(this@SplashActivity, LoginActivity::class.java))
-                overridePendingTransition(R.anim.fade_in, R.anim.fade_out)
-                finish()
-            }
 
+                // 2.0 SplashActivity AppV 4.0.7 Suman    21/03/2023 Location rectification for previous location 25760
+                println("loc_fetch_tag splash begin")
+                progress_wheel.spin()
+                try{
+                    SingleShotLocationProvider.requestSingleUpdate(this,
+                        object : SingleShotLocationProvider.LocationCallback {
+                            override fun onStatusChanged(status: String) {
+                            }
+
+                            override fun onProviderEnabled(status: String) {
+                            }
+
+                            override fun onProviderDisabled(status: String) {
+                            }
+
+                            override fun onNewLocationAvailable(location: Location) {
+                                println("loc_fetch_tag splash end")
+                                Pref.latitude = location.latitude.toString()
+                                Pref.longitude = location.longitude.toString()
+                                Pref.current_latitude = location.latitude.toString()
+                                Pref.current_longitude = location.longitude.toString()
+                                Timber.d("Splash onNewLocationAvailable ${Pref.latitude} ${Pref.longitude}")
+                                progress_wheel.stopSpinning()
+                            }
+                        })
+                }
+                catch (ex:Exception){
+                    ex.printStackTrace()
+                    Timber.d("Splash onNewLocationAvailable ex ${ex.message}")
+                    progress_wheel.stopSpinning()
+                }
+
+                Handler().postDelayed(Runnable {
+                    startActivity(Intent(this@SplashActivity, LoginActivity::class.java))
+                    overridePendingTransition(R.anim.fade_in, R.anim.fade_out)
+                    finish()
+                }, 2200)
+            }
         } else {
             startActivity(Intent(this@SplashActivity, DashboardActivity::class.java))
             overridePendingTransition(R.anim.fade_in, R.anim.fade_out)
@@ -500,6 +653,12 @@ class SplashActivity : BaseActivity(), GpsStatusDetector.GpsStatusDetectorCallBa
         if(requestCode == 401){
             goTONextActi()
         }
+
+        /*if(requestCode == 175){
+            println("battery get 175")
+            checkBatteryOptiSettings()
+            return
+        }*/
 
         if (resultCode == Activity.RESULT_OK) {
             if (requestCode == 100) {

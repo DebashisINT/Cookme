@@ -140,6 +140,32 @@
                         android:textSize="@dimen/_10sdp" />
 
                 </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/revisit_ll"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:orientation="vertical">
+
+                    <ImageView
+                        android:layout_width="@dimen/_22sdp"
+                        android:layout_height="@dimen/_22sdp"
+                        android:scaleType="center"
+                        android:backgroundTint="@color/white"
+                        android:background="@drawable/ic_nearby_new" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/_5sdp"
+                        android:text="@string/revisit"
+                        android:textColor="@color/white"
+                        android:textSize="@dimen/_10sdp" />
+
+
+                </LinearLayout>
             </LinearLayout>
 
             <View
@@ -187,13 +213,13 @@
                         android:layout_marginLeft="@dimen/_10sdp"
                         android:gravity="center"
                         android:orientation="vertical">
-
+                        <!--mantis 26272-->
                         <com.cookmefsm.widgets.AppCustomTextView
                             android:id="@+id/n_shops_TV"
                             android:layout_width="@dimen/_70sdp"
                             android:layout_height="match_parent"
                             android:layout_weight="1"
-                            android:background="@drawable/rounded_corner_yellow_bg"
+                            android:background="@drawable/shadow_selector_page2"
                             android:gravity="center"
                             android:text="0"
                             android:textColor="@android:color/white"
@@ -229,7 +255,7 @@
                             android:layout_width="@dimen/_70sdp"
                             android:layout_height="match_parent"
                             android:layout_weight="1"
-                            android:background="@drawable/rounded_corner_red_bg"
+                            android:background="@drawable/shadow_selector_page1"
                             android:gravity="center"
                             android:text="0"
                             android:textColor="@android:color/white"
@@ -265,7 +291,7 @@
                             android:layout_width="@dimen/_70sdp"
                             android:layout_height="match_parent"
                             android:layout_weight="1"
-                            android:background="@drawable/rounded_corner_green_bg"
+                            android:background="@drawable/shadow_selector_page"
                             android:gravity="center"
                             android:text="0"
                             android:textColor="@android:color/white"
@@ -307,7 +333,7 @@
                                 android:layout_width="@dimen/_70sdp"
                                 android:layout_height="@dimen/_50sdp"
                                 android:layout_centerHorizontal="true"
-                                android:background="@drawable/rounded_corner_daystart_bg"
+                                android:background="@drawable/shadow_selector_tab_ds"
                                 android:gravity="center"
                                 android:paddingLeft="@dimen/_10sdp"
                                 android:paddingTop="@dimen/_10sdp"
@@ -320,7 +346,6 @@
                             <ImageView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-
                                 android:layout_gravity="center"
                                 android:src="@drawable/ic_day_start_new" />
 
@@ -374,7 +399,7 @@
                                 android:layout_width="@dimen/_70sdp"
                                 android:layout_height="@dimen/_50sdp"
                                 android:layout_centerHorizontal="true"
-                                android:background="@drawable/rounded_corner_crimson_bg"
+                                android:background="@drawable/shadow_selector_page3"
                                 android:gravity="center"
                                 android:paddingLeft="@dimen/_10sdp"
                                 android:paddingTop="@dimen/_10sdp"
@@ -440,7 +465,7 @@
                                 android:layout_width="@dimen/_70sdp"
                                 android:layout_height="@dimen/_50sdp"
                                 android:layout_centerHorizontal="true"
-                                android:background="@drawable/rounded_corner_dayend_bg"
+                                android:background="@drawable/shadow_selector_page2"
                                 android:gravity="center"
                                 android:paddingLeft="@dimen/_10sdp"
                                 android:paddingTop="@dimen/_10sdp"
@@ -479,6 +504,57 @@
                             android:layout_marginTop="@dimen/_3sdp"
                             android:gravity="center"
                             android:text="Day End"
+                            android:textColor="@color/login_txt_color"
+                            android:textSize="@dimen/_10sdp"
+                            android:visibility="visible" />
+
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/ll_dash_visit_attendance_newD"
+                        android:layout_width="@dimen/_90sdp"
+                        android:layout_height="@dimen/_70sdp"
+                        android:layout_centerHorizontal="true"
+                        android:layout_centerVertical="true"
+                        android:layout_marginLeft="@dimen/_7sdp"
+                        android:gravity="center"
+                        android:orientation="vertical">
+
+                        <FrameLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:visibility="visible">
+
+                            <com.cookmefsm.widgets.AppCustomTextView
+                                android:layout_width="@dimen/_70sdp"
+                                android:layout_height="@dimen/_50sdp"
+                                android:layout_centerHorizontal="true"
+                                android:background="@drawable/shadow_selector_page1"
+                                android:gravity="center"
+                                android:paddingLeft="@dimen/_10sdp"
+                                android:paddingTop="@dimen/_10sdp"
+                                android:paddingRight="@dimen/_10sdp"
+                                android:paddingBottom="@dimen/_10sdp"
+                                android:textColor="@android:color/white"
+                                android:textSize="@dimen/_10sdp"
+                                android:textStyle="bold"
+                                android:visibility="visible" />
+
+                            <ImageView
+                                android:layout_width="@dimen/_20sdp"
+                                android:layout_height="@dimen/_25sdp"
+                                android:layout_gravity="center"
+                                android:src="@drawable/ic_attendance_machine" />
+
+                        </FrameLayout>
+
+
+                        <com.cookmefsm.widgets.AppCustomTextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/_3sdp"
+                            android:gravity="center"
+                            android:text="Visit"
                             android:textColor="@color/login_txt_color"
                             android:textSize="@dimen/_10sdp"
                             android:visibility="visible" />
@@ -889,6 +965,40 @@
                             android:paddingRight="@dimen/_5sdp"
                             android:paddingBottom="@dimen/_5sdp"
                             app:layout_behavior="@string/appbar_scrolling_view_behavior" />
+
+                        <!--Pjpwise beat name show-->
+                        <LinearLayout
+                            android:id="@+id/ll_beat_shop_wise"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:minHeight="@dimen/_50sdp"
+                            android:orientation="horizontal"
+                            android:paddingLeft="@dimen/_5sdp"
+                            android:paddingRight="@dimen/_5sdp"
+                            android:paddingBottom="@dimen/_5sdp"
+                            android:layout_marginLeft="@dimen/_5sdp"
+                            android:layout_marginRight="@dimen/_5sdp"
+                            android:visibility="gone"
+                            android:gravity="center|start"
+                            android:background="@drawable/shape_cursor_two_button">
+
+                            <ImageView
+                                android:layout_width="@dimen/_30sdp"
+                                android:layout_height="@dimen/_30sdp"
+                                android:src="@drawable/hand_point"
+                                android:rotation="-270"/>
+
+                            <TextView
+                                android:id="@+id/tv_beatNamenew"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:layout_weight="1"
+                                android:text="@string/beat"
+                                android:gravity="center|start"
+                                android:textColor="@color/colorPrimary" />
+
+                        </LinearLayout>
+
                     </LinearLayout>
                 </androidx.core.widget.NestedScrollView>
 

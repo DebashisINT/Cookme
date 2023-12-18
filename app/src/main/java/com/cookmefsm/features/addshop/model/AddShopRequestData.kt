@@ -84,5 +84,10 @@ class AddShopRequestData {
     var GSTN_Number:String?= null
     var ShopOwner_PAN:String?= null
     var shopStatusUpdate:String?= null
+    var FSSAILicNo:String?= null
+
+    var isUpdateAddressFromShopMaster:Boolean?= null
+
+
 
 }

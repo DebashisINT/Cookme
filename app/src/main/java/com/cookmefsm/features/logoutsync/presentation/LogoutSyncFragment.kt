@@ -276,7 +276,6 @@ class LogoutSyncFragment : BaseFragment(), View.OnClickListener {
         //Pref.DayEndMarked=true
         initView(view)
 
-
         if ((mContext as DashboardActivity).isForceLogout) {
             val notificationManager = mContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             notificationManager.cancelAll()
@@ -944,6 +943,7 @@ class LogoutSyncFragment : BaseFragment(), View.OnClickListener {
 
     private fun checkToCallAddShopApi() {
 
+        Timber.d("logout check else ${Pref.IsAutoLogoutFromBatteryCheck} ${AppUtils.isOnline(mContext)}")
         stopAnimation(addCompetetorStockSyncImg)
         addCompetetorStockSyncImg.visibility=View.GONE
         addCompetetorStockTickImg.visibility=View.VISIBLE
@@ -961,10 +961,10 @@ class LogoutSyncFragment : BaseFragment(), View.OnClickListener {
 
             } else {
                 (mContext as DashboardActivity).showSnackMessage(getString(R.string.no_internet))
-                }
+            }
         } else {
             checkToCallSyncOrder()
-            }
+        }
     }
 
     private fun initView(view: View) {
@@ -1366,6 +1366,14 @@ class LogoutSyncFragment : BaseFragment(), View.OnClickListener {
         addShopData.isShopDuplicate=mAddShopDBModelEntity.isShopDuplicate
 
         addShopData.purpose=mAddShopDBModelEntity.purpose
+//start AppV 4.2.2 tufan    20/09/2023 FSSAI Lic No Implementation 26813
+        try {
+            addShopData.FSSAILicNo = mAddShopDBModelEntity.FSSAILicNo
+        }catch (ex:Exception){
+            ex.printStackTrace()
+            addShopData.FSSAILicNo = ""
+        }
+//end AppV 4.2.2 tufan    20/09/2023 FSSAI Lic No Implementation 26813
 
         addShopData.GSTN_Number=mAddShopDBModelEntity.gstN_Number
         addShopData.ShopOwner_PAN=mAddShopDBModelEntity.shopOwner_PAN
@@ -2085,6 +2093,21 @@ class LogoutSyncFragment : BaseFragment(), View.OnClickListener {
             mAddShopDBModelEntity.shopOwner_PAN = ""
             }
 
+        try{
+            if(mAddShopDBModelEntity.isUpdateAddressFromShopMaster!!){
+                addShopData.isUpdateAddressFromShopMaster = true
+            }else{
+                addShopData.isUpdateAddressFromShopMaster = false
+            }
+            Timber.d("tag_update addr ${mAddShopDBModelEntity.isUpdateAddressFromShopMaster} ${addShopData.isUpdateAddressFromShopMaster}")
+        }catch (ex:Exception){
+            ex.printStackTrace()
+            addShopData.isUpdateAddressFromShopMaster = false
+            Timber.d("tag_update addr ex ${addShopData.isUpdateAddressFromShopMaster}")
+        }
+
+
+
 
         Timber.d("=====SyncEditShop Input Params (Logout sync)======")
         Timber.d("shop id====> " + addShopData.shop_id)
@@ -2421,12 +2444,21 @@ class LogoutSyncFragment : BaseFragment(), View.OnClickListener {
         addOrder.latitude = order.order_lat
         addOrder.longitude = order.order_long
 
-        if (order.scheme_amount != null) {
-            addOrder.scheme_amount = order.scheme_amount
-        }
-        else {
-            addOrder.scheme_amount = ""
+        try{
+            if (order.scheme_amount != null) {
+                if(order.scheme_amount.equals("")){
+                    addOrder.scheme_amount = "0"
+                }else{
+                    addOrder.scheme_amount = order.scheme_amount
+                }
             }
+            else {
+                addOrder.scheme_amount = "0"
+            }
+        }catch (ex:Exception){
+            ex.printStackTrace()
+            addOrder.scheme_amount = "0"
+        }
 
         if (order.remarks != null) {
             addOrder.remarks = order.remarks
@@ -3725,6 +3757,9 @@ class LogoutSyncFragment : BaseFragment(), View.OnClickListener {
 
                 if(shopDurationApiReqForNewShop.shop_list!!.size>0){
                     uploadNewShopVisit(shopDurationApiReqForNewShop,newShopList,shopDataList as ArrayList<ShopDurationRequestData>)
+                    if(!revisitStatusList.isEmpty()){
+                        callRevisitStatusUploadApi(revisitStatusList!!)
+                    }
                 }
                 Handler().postDelayed(Runnable {
                     if(shopDurationApiReqForOldShop.shop_list!!.size>0){
@@ -3864,32 +3899,36 @@ class LogoutSyncFragment : BaseFragment(), View.OnClickListener {
 
 
     private fun callRevisitStatusUploadApi(revisitStatusList : MutableList<ShopRevisitStatusRequestData>){
-        val revisitStatus = ShopRevisitStatusRequest()
-        revisitStatus.user_id=Pref.user_id
-        revisitStatus.session_token=Pref.session_token
-        revisitStatus.ordernottaken_list=revisitStatusList
+        try{
+            val revisitStatus = ShopRevisitStatusRequest()
+            revisitStatus.user_id=Pref.user_id
+            revisitStatus.session_token=Pref.session_token
+            revisitStatus.ordernottaken_list=revisitStatusList
 
-        val repository = ShopRevisitStatusRepositoryProvider.provideShopRevisitStatusRepository()
-        compositeDisposable.add(
+            val repository = ShopRevisitStatusRepositoryProvider.provideShopRevisitStatusRepository()
+            compositeDisposable.add(
                 repository.shopRevisitStatus(revisitStatus)
-                        .observeOn(AndroidSchedulers.mainThread())
-                        .subscribeOn(Schedulers.io())
-                        .subscribe({ result ->
-                            Timber.d("callRevisitStatusUploadApi : RESPONSE " + result.status)
-                            if (result.status == NetworkConstant.SUCCESS){
-                                for(i in revisitStatusList.indices){
-                                    AppDatabase.getDBInstance()?.shopVisitOrderStatusRemarksDao()!!.updateOrderStatus(revisitStatusList[i]!!.shop_revisit_uniqKey!!)
-                                }
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribeOn(Schedulers.io())
+                    .subscribe({ result ->
+                        Timber.d("callRevisitStatusUploadApi : RESPONSE " + result.status)
+                        if (result.status == NetworkConstant.SUCCESS){
+                            for(i in revisitStatusList.indices){
+                                AppDatabase.getDBInstance()?.shopVisitOrderStatusRemarksDao()!!.updateOrderStatus(revisitStatusList[i]!!.shop_revisit_uniqKey!!)
                             }
-                        },{error ->
-                            if (error == null) {
-                                Timber.d("callRevisitStatusUploadApi : ERROR " + "UNEXPECTED ERROR IN SHOP ACTIVITY API")
-                            } else {
-                                Timber.d("callRevisitStatusUploadApi : ERROR " + error.localizedMessage)
-                                error.printStackTrace()
-                            }
-                        })
-        )
+                        }
+                    },{error ->
+                        if (error == null) {
+                            Timber.d("callRevisitStatusUploadApi : ERROR " + "UNEXPECTED ERROR IN SHOP ACTIVITY API")
+                        } else {
+                            Timber.d("callRevisitStatusUploadApi : ERROR " + error.localizedMessage)
+                            error.printStackTrace()
+                        }
+                    })
+            )
+        }catch (ex:Exception){
+            ex.printStackTrace()
+        }
     }
 
 
@@ -5960,7 +5999,7 @@ class LogoutSyncFragment : BaseFragment(), View.OnClickListener {
                 } else {
                     Handler().postDelayed(Runnable {
                         tv_logout.isEnabled = true
-                        if(Pref.DayEndMarked){
+                        if(Pref.DayEndMarked || Pref.IsAutoLogoutFromBatteryCheck){
                             performLogout()
                         }
 
@@ -6261,7 +6300,7 @@ class LogoutSyncFragment : BaseFragment(), View.OnClickListener {
                 } else {
                     Handler().postDelayed(Runnable {
                         tv_logout.isEnabled = true
-                        if(Pref.DayEndMarked){
+                        if(Pref.DayEndMarked || Pref.IsAutoLogoutFromBatteryCheck){
                             performLogout()
                         }
 
@@ -6770,31 +6809,15 @@ class LogoutSyncFragment : BaseFragment(), View.OnClickListener {
                             if (logoutResponse.status == NetworkConstant.SUCCESS) {
                                 (mContext as DashboardActivity).isChangedPassword = false
                                 Pref.tempDistance = "0.0"
-
-                                /*if ((mContext as DashboardActivity).isForceLogout)
-                                    Pref.prevOrderCollectionCheckTimeStamp = 0L*/
-
                                 if (unSyncedList != null && unSyncedList.isNotEmpty()) {
                                     for (i in unSyncedList.indices) {
                                         AppDatabase.getDBInstance()!!.userLocationDataDao().updateIsUploaded(true, unSyncedList[i].locationId)
                                     }
                                 }
-
                                 (mContext as DashboardActivity).syncShopListAndLogout()
-                            } else if (logoutResponse.status == NetworkConstant.SESSION_MISMATCH) {
-                                //clearData()
-                                (mContext as DashboardActivity).isChangedPassword = false
-                                startActivity(Intent(mContext, LoginActivity::class.java))
-                                (mContext as DashboardActivity).overridePendingTransition(R.anim.fade_in, R.anim.fade_out)
-                                (mContext as DashboardActivity).finishAffinity()
                             } else {
                                 progress_wheel.stopSpinning()
                                 (mContext as DashboardActivity).showSnackMessage("Failed to logout")
-
-                                if ((mContext as DashboardActivity).isChangedPassword) {
-                                    (mContext as DashboardActivity).isChangedPassword = false
-                                    (mContext as DashboardActivity).onBackPressed()
-                                }
                             }
                             BaseActivity.isApiInitiated = false
 
@@ -6978,7 +7001,9 @@ class LogoutSyncFragment : BaseFragment(), View.OnClickListener {
 
 
     private fun performLogout() {
-        if(Pref.DayEndMarked){
+        if(Pref.DayEndMarked || Pref.IsAutoLogoutFromBatteryCheck){
+            Pref.IsAutoLogoutFromBatteryCheck=false
+            println("service_battert_tag logout ${Pref.IsAutoLogoutFromBatteryCheck}")
             if (Pref.isShowLogoutReason && !TextUtils.isEmpty(Pref.approvedOutTime)) {
                 val currentTimeInLong = AppUtils.convertTimeWithMeredianToLong(AppUtils.getCurrentTimeWithMeredian())
                 val approvedOutTimeInLong = AppUtils.convertTimeWithMeredianToLong(Pref.approvedOutTime)

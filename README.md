@@ -8,7 +8,7 @@ It uses android architecture components (Live data, View model and Room) with Rx
 2. A system that is testable, independent of frameworks, database and UI
 3. When some frameworks or libraries become obsolete easily replace them with new ones.
 
-
+ 
 ## Using this template    
   There are three main packages.  
   

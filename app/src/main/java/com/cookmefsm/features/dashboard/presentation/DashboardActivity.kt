@@ -3,7 +3,9 @@ package com.cookmefsm.features.dashboard.presentation
 //import com.fieldtrackingsystem.features.logout.presentation.LogOutTimeSelect
 
 import android.Manifest
+import android.R.id
 import android.annotation.SuppressLint
+import android.annotation.TargetApi
 import android.app.Activity
 import android.app.Dialog
 import android.app.NotificationManager
@@ -11,6 +13,7 @@ import android.app.PendingIntent
 import android.app.job.JobInfo
 import android.app.job.JobScheduler
 import android.content.*
+import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -19,8 +22,13 @@ import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.ColorDrawable
 import android.location.Location
 import android.location.LocationManager
+import android.media.MediaPlayer
+import android.media.RingtoneManager
 import android.net.*
 import android.os.*
+import android.provider.CallLog
+import android.provider.ContactsContract
+import android.provider.ContactsContract.CommonDataKinds
 import android.provider.MediaStore
 import android.provider.Settings
 import android.speech.RecognizerIntent
@@ -56,6 +64,7 @@ import com.cookmefsm.*
 import com.cookmefsm.R
 import com.cookmefsm.app.*
 import com.cookmefsm.app.NewFileUtils.browseDocuments
+import com.cookmefsm.app.NewFileUtils.browsePDFDocuments
 import com.cookmefsm.app.NewFileUtils.getExtension
 import com.cookmefsm.app.domain.*
 import com.cookmefsm.app.types.DashboardType
@@ -119,6 +128,11 @@ import com.cookmefsm.features.commondialogsinglebtn.AddFeedbackSingleBtnDialog
 import com.cookmefsm.features.commondialogsinglebtn.CommonDialogSingleBtn
 import com.cookmefsm.features.commondialogsinglebtn.OnDialogClickListener
 import com.cookmefsm.features.commondialogsinglebtn.TermsAndConditionsSingleBtnDialog
+import com.cookmefsm.features.contacts.ContactDtls
+import com.cookmefsm.features.contacts.ContactGr
+import com.cookmefsm.features.contacts.ContactMasterRes
+import com.cookmefsm.features.contacts.ContactsAddFrag
+import com.cookmefsm.features.contacts.ContactsFrag
 import com.cookmefsm.features.dailyPlan.prsentation.AllShopListFragment
 import com.cookmefsm.features.dailyPlan.prsentation.DailyPlanListFragment
 import com.cookmefsm.features.dailyPlan.prsentation.PlanDetailsFragment
@@ -165,6 +179,9 @@ import com.cookmefsm.features.login.model.alarmconfigmodel.AlarmConfigDataModel
 import com.cookmefsm.features.login.presentation.LoginActivity
 import com.cookmefsm.features.logout.presentation.api.LogoutRepositoryProvider
 import com.cookmefsm.features.logoutsync.presentation.LogoutSyncFragment
+import com.cookmefsm.features.marketAssist.MarketAssistTabFrag
+import com.cookmefsm.features.marketAssist.ShopDtlsMarketAssistFrag
+import com.cookmefsm.features.marketAssist.ShopListMarketAssistFrag
 import com.cookmefsm.features.marketing.presentation.MarketingPagerFragment
 import com.cookmefsm.features.meetinglist.prsentation.MeetingListFragment
 import com.cookmefsm.features.member.MapViewForTeamFrag
@@ -187,6 +204,7 @@ import com.cookmefsm.features.nearbyshops.multipleattachImage.MultipleImageFragm
 import com.cookmefsm.features.nearbyshops.presentation.BeatListFragment
 import com.cookmefsm.features.nearbyshops.presentation.NearByShopsListFragment
 import com.cookmefsm.features.nearbyshops.presentation.NewNearByShopsListFragment
+import com.cookmefsm.features.nearbyshops.presentation.ShopCallHisFrag
 import com.cookmefsm.features.nearbyuserlist.presentation.NearbyUserListFragment
 import com.cookmefsm.features.newcollection.CollectionDetailsStatusFragment
 import com.cookmefsm.features.newcollection.CollectionShopListFragment
@@ -209,7 +227,9 @@ import com.cookmefsm.features.performance.GpsStatusFragment
 import com.cookmefsm.features.performance.PerformanceFragment
 import com.cookmefsm.features.performance.api.UpdateGpsStatusRepoProvider
 import com.cookmefsm.features.performance.model.UpdateGpsInputParamsModel
+import com.cookmefsm.features.performanceAPP.OwnPerformanceFragment
 import com.cookmefsm.features.performanceAPP.PerformanceAppFragment
+import com.cookmefsm.features.performanceAPP.allPerformanceFrag
 import com.cookmefsm.features.permissionList.ViewPermissionFragment
 import com.cookmefsm.features.photoReg.*
 import com.cookmefsm.features.privacypolicy.PrivacypolicyWebviewFrag
@@ -226,6 +246,7 @@ import com.cookmefsm.features.stock.StockListFragment
 import com.cookmefsm.features.stockAddCurrentStock.AddShopStockFragment
 import com.cookmefsm.features.stockAddCurrentStock.UpdateShopStockFragment
 import com.cookmefsm.features.stockAddCurrentStock.ViewStockDetailsFragment
+import com.cookmefsm.features.stockAddCurrentStock.model.MultipleImageFileUploadonStock
 import com.cookmefsm.features.stockCompetetorStock.AddCompetetorStockFragment
 import com.cookmefsm.features.stockCompetetorStock.CompetetorStockFragment
 import com.cookmefsm.features.stockCompetetorStock.ViewComStockProductDetails
@@ -261,6 +282,8 @@ import com.cookmefsm.mappackage.MapActivityWithoutPath
 import com.cookmefsm.mappackage.SendBrod
 import com.cookmefsm.widgets.AppCustomEditText
 import com.cookmefsm.widgets.AppCustomTextView
+import com.facebook.FacebookSdk
+import com.facebook.appevents.AppEventsLogger
 import com.google.android.gms.location.Geofence
 import com.google.android.gms.location.GeofencingClient
 import com.google.android.gms.tasks.OnCompleteListener
@@ -276,6 +299,7 @@ import com.theartofdev.edmodo.cropper.CropImage
 import com.theartofdev.edmodo.cropper.CropImageView
 import com.themechangeapp.pickimage.PermissionHelper
 import com.themechangeapp.pickimage.PermissionHelper.Companion.REQUEST_CODE_DOCUMENT
+import com.themechangeapp.pickimage.PermissionHelper.Companion.REQUEST_CODE_DOCUMENT_PDF
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.schedulers.Schedulers
 import kotlinx.android.synthetic.main.fragment_dashboard_new.*
@@ -289,19 +313,11 @@ import org.json.JSONArray
 import org.json.JSONObject
 import timber.log.Timber
 import java.io.*
+import java.sql.Date
 import java.util.*
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.TimeUnit
-import android.R.attr.name
-import android.content.pm.ApplicationInfo
-import com.cookmefsm.app.NewFileUtils.browsePDFDocuments
-import com.cookmefsm.features.marketAssist.MarketAssistTabFrag
-import com.cookmefsm.features.marketAssist.ShopDtlsMarketAssistFrag
-import com.cookmefsm.features.marketAssist.ShopListMarketAssistFrag
-import com.cookmefsm.features.performanceAPP.OwnPerformanceFragment
-import com.cookmefsm.features.performanceAPP.allPerformanceFrag
-import com.cookmefsm.features.stockAddCurrentStock.model.MultipleImageFileUploadonStock
-import com.themechangeapp.pickimage.PermissionHelper.Companion.REQUEST_CODE_DOCUMENT_PDF
+import kotlin.collections.ArrayList
 
 
 /*
@@ -360,6 +376,7 @@ class DashboardActivity : BaseActivity(), View.OnClickListener, BaseNavigation, 
     @SuppressLint("MissingPermission")
     override fun loadFragment(mFragType: FragType, addToStack: Boolean, initializeObject: Any) {
         AppUtils.contx = this
+        Pref.IsLoggedIn = true
 
         drawerLayout.closeDrawers()
 
@@ -383,24 +400,459 @@ class DashboardActivity : BaseActivity(), View.OnClickListener, BaseNavigation, 
             Timber.d("token : " + token.toString())
         })
 
-        var loc1 = Location("")
-        var loc2 = Location("")
-        loc1.latitude = 22.5689369
-        loc1.longitude = 88.4316907
-        loc2.latitude = 22.5689547
-        loc2.longitude = 88.4316994
-        var dt = FTStorageUtils.checkShopPositionWithinRadious(loc1, loc2, 200)
+        //begin Suman 21-09-2023 mantis id 0026837
+        try{
+            val packageName = "com.google.android.apps.maps"
+            val appInfo: ApplicationInfo = this.getPackageManager().getApplicationInfo(packageName, 0)
+            var appstatus = appInfo.enabled
 
-        println("load_frag " + mFragType.toString() + "     " + Pref.user_id.toString() + " "+dt );
+            if(!appstatus && !mFragType.equals(FragType.DashboardFragment)){
+                val simpleDialog = Dialog(mContext)
+                simpleDialog.setCancelable(false)
+                simpleDialog.getWindow()!!.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+                simpleDialog.setContentView(R.layout.dialog_ok)
+                val dialogHeader = simpleDialog.findViewById(R.id.dialog_yes_header_TV) as AppCustomTextView
+                dialogHeader.text = "Location will be inappropriate as Google map is disabled. Please go to settings of your phone and Enable Google Map. Thank you."
+                val dialogYes = simpleDialog.findViewById(R.id.tv_dialog_yes) as AppCustomTextView
+                dialogYes.setOnClickListener({ view ->
+                    simpleDialog.cancel()
+                })
+                simpleDialog.show()
+                return
+            }else{
+                println("load_frag " +" gmap app enable")
+            }
 
-        if (addToStack) {
+            //val pInfo = this.packageManager.getPackageInfo("com.google.android.apps.maps", PackageManager.GET_PERMISSIONS)
+            //val version = pInfo.versionName
+        }catch (ex:Exception){
+            ex.printStackTrace()
+        }
+        //end Suman 21-09-2023 mantis id 0026837
+        if(mFragType.equals(FragType.DashboardFragment) && !mFragType.equals(FragType.LogoutSyncFragment)){
+            Pref.IsAnyPageVisitFromDshboard = false
+            println("dasg_tag if")
+        }else{
+            Pref.IsAnyPageVisitFromDshboard = true
+            println("dasg_tag else")
+        }
+
+   /*     var fgg = getPhoneBookGroups()
+        contactDtls=ArrayList()
+        for(i in 1..fgg.size-1){
+           var ar = getContactsForGroup1(fgg.get(i).gr_id,fgg.get(i).gr_name)
+            var gg = "asd"
+        }*/
+
+        //getNamePhoneDetails()
+        //initPermissionCheckOne()
+       // Pref.IsCallLogHistoryActivated = true
+        Pref.MultiVisitIntervalInMinutes = "1"
+        //Pref.IsUsbDebuggingRestricted = false
+        println("load_frag " + mFragType.toString() + "     " + Pref.user_id.toString()+" "+Pref.MultiVisitIntervalInMinutes )
+        batteryCheck(mFragType,addToStack,initializeObject)
+        /*if (addToStack) {
             mTransaction.add(R.id.frame_layout_container, getFragInstance(mFragType, initializeObject, true)!!, mFragType.toString())
             mTransaction.addToBackStack(mFragType.toString()).commitAllowingStateLoss()
         } else {
             mTransaction.replace(R.id.frame_layout_container, getFragInstance(mFragType, initializeObject, true)!!, mFragType.toString())
             mTransaction.commitAllowingStateLoss()
+        }*/
+
+    }
+
+
+
+    var contactDtls : ArrayList<ContactDtls> = ArrayList()
+    private fun getPhoneBookGroups(): ArrayList<ContactGr> {
+        val groups : ArrayList<ContactGr> = ArrayList()
+
+        val projection = arrayOf(ContactsContract.Groups._ID, ContactsContract.Groups.TITLE)
+        val cursor = contentResolver.query(ContactsContract.Groups.CONTENT_URI, projection, null, null, null)
+        cursor?.use {
+            while (it.moveToNext()) {
+                val groupName = it.getString(it.getColumnIndex(ContactsContract.Groups.TITLE))
+                val groupId = it.getString(it.getColumnIndex(ContactsContract.Groups._ID))
+                if(!groups.map { it.gr_name }.contains(groupName)){
+                    groups.add(ContactGr(groupId,groupName))
+                    println("tag_contact $groupId $groupName")
+                }
+
+            }
+        }
+        return groups
+    }
+
+    /*fun getContactsOfGroup(group: Group): Cursor? {
+        // getting ids of contacts that are in this specific group
+        val where = ((ContactsContract.CommonDataKinds.GroupMembership.GROUP_ROW_ID + "="
+                + group.id) + " AND "
+                + ContactsContract.CommonDataKinds.GroupMembership.MIMETYPE + "='"
+                + ContactsContract.CommonDataKinds.GroupMembership.CONTENT_ITEM_TYPE + "'")
+        val query = context.contentResolver.query(
+            ContactsContract.Data.CONTENT_URI, arrayOf(
+                ContactsContract.CommonDataKinds.GroupMembership.CONTACT_ID
+            ), where, null, ContactsContract.Data.DISPLAY_NAME + " COLLATE LOCALIZED ASC"
+        )
+        var ids = ""
+        query!!.moveToFirst()
+        while (!query.isAfterLast) {
+            ids += "," + query.getString(0)
+            query.moveToNext()
+        }
+        if (ids.length > 0) {
+            ids = ids.substring(1)
         }
 
+        // getting all of information of contacts. it fetches all of number from every one
+        val projection = arrayOf(
+            "_id",
+            "contact_id",
+            "lookup",
+            "display_name",
+            "data1",
+            "photo_id",
+            "data2"
+        )
+        val selection =
+            (("mimetype ='" + ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE + "'"
+                    + " AND account_name='" + group.accountName) + "' AND account_type='" + group.accountType + "'"
+                    + " AND contact_id in (" + ids + ")")
+        return context.contentResolver.query(BASE_URI, projection, selection, null, null)
+    }*/
+
+    private fun initPermissionCheckOne() {
+        var permissionList = arrayOf<String>( Manifest.permission.READ_CALL_LOG, Manifest.permission.WRITE_CALL_LOG,Manifest.permission.READ_CONTACTS)
+        permissionUtils = PermissionUtils(this, object : PermissionUtils.OnPermissionListener {
+            @TargetApi(Build.VERSION_CODES.M)
+            override fun onPermissionGranted() {
+
+                //Toaster.msgShort(this@DashboardActivity,"PG")
+                //var t1 = obtenerDetallesLlamadas(this@DashboardActivity)
+                //var t2 = getNamePhoneDetails()
+                var t4="456"
+            }
+            override fun onPermissionNotGranted() {
+
+            }
+        },permissionList)
+    }
+
+    @SuppressLint("Range")
+
+
+    data class Contact(val id:String="",val name:String="",val number:String="")
+
+    public fun getNamePhoneDetails(): ArrayList<Contact>? {
+        val names:ArrayList<Contact> = ArrayList()
+        val cr = contentResolver
+        val cur = cr.query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI, null,
+            null, null, null)
+        if (cur!!.count > 0) {
+            while (cur.moveToNext()) {
+                val id = cur.getString(cur.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NAME_RAW_CONTACT_ID))
+                val name = cur.getString(cur.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME))
+                val number = cur.getString(cur.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER))
+                val grr =cur.getString(cur.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DATA1))
+                names.add(Contact(id , name , number))
+            }
+        }
+        return names
+    }
+
+    fun getContactsForGroup(groupID: String, activity: Activity): HashMap<String, String>? {
+        val dataCursor = activity.contentResolver.query(
+            ContactsContract.Data.CONTENT_URI, arrayOf( // PROJECTION
+                ContactsContract.Data.CONTACT_ID,
+                ContactsContract.Data.DISPLAY_NAME,  // contact name
+                ContactsContract.Data.DATA1 // group
+            ),
+            ContactsContract.Data.MIMETYPE + " = ? " + "AND " +  // SELECTION
+                    ContactsContract.Data.DATA1 + " = ? ", arrayOf( // SELECTION_ARGS
+                ContactsContract.CommonDataKinds.GroupMembership.CONTENT_ITEM_TYPE,
+                groupID
+            ),
+            null
+        )
+        dataCursor!!.moveToFirst()
+        val map = HashMap<String, String>()
+        while (dataCursor.moveToNext()) //
+        {
+            val s0 = dataCursor.getString(0) //contact_id
+            val s1 = dataCursor.getString(1) //contact_name
+            val s2 = dataCursor.getString(2) //group_id
+            Log.d("tag", "contact_id: $s0  contact: $s1   groupID: $s2")
+            map[s0] = s1
+        }
+        return map
+    }
+
+    fun getContactsForGroup1(grId:String,grName:String):ArrayList<ContactDtls>{
+        val groupId: String = grId
+        val cProjection = arrayOf<String>(ContactsContract.Contacts.DISPLAY_NAME, CommonDataKinds.GroupMembership.CONTACT_ID)
+
+        val groupCursor = contentResolver.query(
+            ContactsContract.Data.CONTENT_URI,
+            cProjection,
+            CommonDataKinds.GroupMembership.GROUP_ROW_ID + "= ?" + " AND "
+                    + CommonDataKinds.GroupMembership.MIMETYPE + "='"
+                    + CommonDataKinds.GroupMembership.CONTENT_ITEM_TYPE + "'",
+            arrayOf<String>(groupId.toString()),
+            null
+        )
+        if (groupCursor != null && groupCursor.moveToFirst()) {
+            do {
+                val nameCoumnIndex = groupCursor.getColumnIndex(CommonDataKinds.Phone.DISPLAY_NAME)
+                val name = groupCursor.getString(nameCoumnIndex)
+                val contactId =
+                    groupCursor.getLong(groupCursor.getColumnIndex(CommonDataKinds.GroupMembership.CONTACT_ID))
+                val numberCursor = contentResolver.query(
+                    CommonDataKinds.Phone.CONTENT_URI,
+                    arrayOf<String>(CommonDataKinds.Phone.NUMBER),
+                    CommonDataKinds.Phone.CONTACT_ID + "=" + contactId,
+                    null,
+                    null
+                )
+                if (numberCursor!!.moveToFirst()) {
+                    val numberColumnIndex = numberCursor!!.getColumnIndex(CommonDataKinds.Phone.NUMBER)
+                    do {
+                        val phoneNumber = numberCursor!!.getString(numberColumnIndex)
+                        Log.d("your tag", "contact $name:$phoneNumber")
+                        println("tag_contact for grId ${groupId} contact $name:$phoneNumber")
+                        var ph = phoneNumber.toString().replace(" ","")
+                        if(!contactDtls.map { it.number }.contains(ph)){
+                            contactDtls.add(ContactDtls(grName,name,ph))
+                        }
+                    } while (numberCursor!!.moveToNext())
+                    numberCursor!!.close()
+                }
+            } while (groupCursor.moveToNext())
+            groupCursor.close()
+        }
+        return contactDtls
+    }
+
+    data class PhoneCallDtls(var number:String?="",var type:String?="",var callDate:String?="",var callDateTime:String?="",var callDuration:String?="")
+
+    fun obtenerDetallesLlamadas(context: Context): ArrayList<PhoneCallDtls>? {
+        //public static String obtenerDetallesLlamadas(Context context) {
+        try {
+            val stringBuffer = StringBuffer()
+            val cursor = context.contentResolver.query(
+                CallLog.Calls.CONTENT_URI,
+                null, null, null, CallLog.Calls.DATE + " DESC"
+            )
+            val number = cursor!!.getColumnIndex(CallLog.Calls.NUMBER)
+            val type = cursor.getColumnIndex(CallLog.Calls.TYPE)
+            val date = cursor.getColumnIndex(CallLog.Calls.DATE)
+            val duration = cursor.getColumnIndex(CallLog.Calls.DURATION)
+
+            val phoneCallRecord = ArrayList<PhoneCallDtls>()
+
+            while (cursor.moveToNext()) {
+                val phNumber = cursor.getString(number)
+                val callType = cursor.getString(type)
+                val callDate = cursor.getString(date)
+                val callDayTime = Date(java.lang.Long.valueOf(callDate))
+                var callDateTime = AppUtils.getDateTimeFromTimeStamp(callDate.toLong())
+                val callDuration = cursor.getString(duration)
+                var dir: String? = null
+                val dircode = callType.toInt()
+                when (dircode) {
+                    CallLog.Calls.OUTGOING_TYPE -> dir = "OUTGOING"
+                    CallLog.Calls.INCOMING_TYPE -> dir = "INCOMING"
+                    CallLog.Calls.MISSED_TYPE -> dir = "MISSED"
+                }
+                stringBuffer.append(
+                    "\nPhone Number:--- " + phNumber + " \nCall Type:--- "
+                            + dir + " \nCall Date:--- " + callDayTime
+                            + " \nCall duration in sec :--- " + callDuration
+                )
+                stringBuffer.append("\n----------------------------------")
+
+                try{
+                    val obj = PhoneCallDtls()
+                    obj.number = phNumber
+                    obj.type = dir
+                    obj.callDate = callDate
+                    obj.callDateTime = callDateTime
+                    obj.callDuration = callDuration
+                    phoneCallRecord.add(obj)
+                }catch (ex:Exception){
+                    ex.printStackTrace()
+                }
+
+            }
+            cursor.close()
+            return phoneCallRecord
+            //return stringBuffer.toString();
+        } catch (ex: java.lang.Exception) {
+            ex.printStackTrace()
+        }
+        return null
+    }
+
+
+    fun batteryCheck(mFragType: FragType, addToStack: Boolean, initializeObject: Any){
+        val mTransaction = supportFragmentManager.beginTransaction()
+        mTransaction.setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out, android.R.anim.fade_in, android.R.anim.fade_out)
+        try{
+            val pm = mContext.getSystemService(Context.POWER_SERVICE) as PowerManager
+            var sett = pm.isIgnoringBatteryOptimizations(packageName)
+            if(!mFragType.equals(FragType.DashboardFragment) && sett==false && !mFragType.equals(FragType.LogoutSyncFragment)){
+                val simpleDialog = Dialog(mContext)
+                simpleDialog.setCancelable(false)
+                simpleDialog.getWindow()!!.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+                simpleDialog.setContentView(R.layout.dialog_ok_logout)
+                val dialogHeader = simpleDialog.findViewById(R.id.dialog_yes_header_TV) as AppCustomTextView
+                var msgHead = "App battery Saver is turned on. Please follow the below settings."
+                if(AppUtils.getDeviceName().contains("MI",ignoreCase = true) || AppUtils.getDeviceName().contains("Redmi",ignoreCase = true) ||
+                    AppUtils.getDeviceName().contains("Poco",ignoreCase = true)){
+                    dialogHeader.text = msgHead+" "+"Go to Settings -> Apps -> Manage Apps -> FSM App -> Battery Saver -> No restrictions."
+                }else if(AppUtils.getDeviceName().contains("Vivo",ignoreCase = true)){
+                    dialogHeader.text = msgHead+" "+"Go to Settings -> Battery -> Background Battery Power Consumption Ranking / High Background Power Consumption -> FSM App -> Don't Restrict."
+                }else{
+                    dialogHeader.text = msgHead+" "+"Go to Settings -> Apps -> FSM App -> Battery -> Unrestricted."
+                }
+                val dialogYes = simpleDialog.findViewById(R.id.tv_dialog_yes) as AppCustomTextView
+                dialogYes.setOnClickListener({ view ->
+                    //simpleDialog.cancel()
+                    //callLogout()
+
+                    /*val intent = Intent()
+                    val packageName = packageName
+                    intent.action = Settings.ACTION_APPLICATION_DETAILS_SETTINGS
+                    val uri = Uri.fromParts("package", packageName, null)
+                    intent.data = uri
+                    mContext.startActivity(intent)*/
+                })
+                simpleDialog.show()
+                Handler().postDelayed(Runnable {
+                    val timer = object : CountDownTimer(6 * 1000, 1000) {
+                        override fun onTick(millisUntilFinished: Long) {
+                            dialogYes.text = "Logout in "+(millisUntilFinished / 1000).toString()+" seconds..."
+                        }
+                        override fun onFinish() {
+                            simpleDialog.cancel()
+                            callLogout()
+                            //Toaster.msgShort(this@DashboardActivity,"Logout call")
+                        }
+                    }.start()
+                }, 1000)
+            }
+            else{
+                if (addToStack) {
+                    mTransaction.add(R.id.frame_layout_container, getFragInstance(mFragType, initializeObject, true)!!, mFragType.toString())
+                    mTransaction.addToBackStack(mFragType.toString()).commitAllowingStateLoss()
+                } else {
+                    mTransaction.replace(R.id.frame_layout_container, getFragInstance(mFragType, initializeObject, true)!!, mFragType.toString())
+                    mTransaction.commitAllowingStateLoss()
+                }
+            }
+        }catch (ex:Exception){
+            ex.printStackTrace()
+            if (addToStack) {
+                mTransaction.add(R.id.frame_layout_container, getFragInstance(mFragType, initializeObject, true)!!, mFragType.toString())
+                mTransaction.addToBackStack(mFragType.toString()).commitAllowingStateLoss()
+            } else {
+                mTransaction.replace(R.id.frame_layout_container, getFragInstance(mFragType, initializeObject, true)!!, mFragType.toString())
+                mTransaction.commitAllowingStateLoss()
+            }
+        }
+    }
+
+    fun callLogout(){
+        Pref.IsAutoLogoutFromBatteryCheck = true
+        if(AppUtils.isOnline(this)){
+            Timber.d("Battery optimization in online mode.")
+            (mContext as DashboardActivity).loadFragment(FragType.LogoutSyncFragment, true, "")
+        }else{
+            Timber.d("Battery optimization in offline mode.")
+            try{
+                var  soundUriAlarm = Uri.parse(ContentResolver.SCHEME_ANDROID_RESOURCE + "://" + this.getPackageName() + "/" + R.raw.beethoven)
+                if (soundUriAlarm == null){
+                    soundUriAlarm = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+                }
+                var player: MediaPlayer = MediaPlayer.create(this, soundUriAlarm)
+                player.isLooping = true
+                player.start()
+                var vibrator : Vibrator = this.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+                val pattern = longArrayOf(0, 5, 10, 20, 40, 80, 120, 100, 600, 700, 500, 500, 500)
+                vibrator.vibrate(pattern, 1)
+
+
+                val simpleDialog = Dialog(mContext)
+                simpleDialog.setCancelable(false)
+                simpleDialog.getWindow()!!.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+                simpleDialog.setContentView(R.layout.dialog_ok)
+                val dialogHeader = simpleDialog.findViewById(R.id.dialog_yes_header_TV) as AppCustomTextView
+                dialogHeader.text = "Device is in offline mode. Internet connection is required for auto logout."
+                val dialogYes = simpleDialog.findViewById(R.id.tv_dialog_yes) as AppCustomTextView
+                dialogYes.setOnClickListener({ view ->
+                    simpleDialog.cancel()
+                    player.stop()
+                    vibrator.cancel()
+                })
+                simpleDialog.show()
+            }catch (ex:Exception){
+                ex.printStackTrace()
+            }
+        }
+
+
+        /*val unSyncedList = AppDatabase.getDBInstance()!!.userLocationDataDao().getLocationUpdateForADayNotSyn(AppUtils.convertFromRightToReverseFormat(Pref.login_date!!), false)
+        var distance = 0.0
+        if (unSyncedList != null && unSyncedList.isNotEmpty()) {
+            var totalDistance = 0.0
+            for (i in unSyncedList.indices) {
+                totalDistance += unSyncedList[i].distance.toDouble()
+            }
+            distance = Pref.tempDistance.toDouble() + totalDistance
+        }
+        else{
+            distance = Pref.tempDistance.toDouble()
+        }
+        var location = ""
+        if (Pref.logout_latitude != "0.0" && Pref.logout_longitude != "0.0") {
+            location = LocationWizard.getAdressFromLatlng(this, Pref.logout_latitude.toDouble(), Pref.logout_longitude.toDouble())
+            if (location.contains("http"))
+                location = "Unknown"
+        }
+
+        val repository = LogoutRepositoryProvider.provideLogoutRepository()
+        BaseActivity.compositeDisposable.add(
+            repository.logout(Pref.user_id!!, Pref.session_token!!, Pref.logout_latitude, Pref.logout_longitude,AppUtils.getCurrentDateTime(),
+                distance.toString(), "1", location)
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribeOn(Schedulers.io())
+                .subscribe({ result ->
+                    val logoutResponse = result as BaseResponse
+                    Timber.d("AUTO_LOGOUT : " + "RESPONSE : " + "\n" + "Time : " + AppUtils.getCurrentDateTime() + ", USER :" + Pref.user_name + ",MESSAGE : " + logoutResponse.message)
+                    if (logoutResponse.status == NetworkConstant.SUCCESS) {
+                        Pref.tempDistance = "0.0"
+                        if (unSyncedList != null && unSyncedList.isNotEmpty()) {
+                            for (i in unSyncedList.indices) {
+                                AppDatabase.getDBInstance()!!.userLocationDataDao().updateIsUploaded(true, unSyncedList[i].locationId)
+                            }
+                        }
+                        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                        notificationManager.cancelAll()
+                        Pref.logout_latitude = "0.0"
+                        Pref.logout_longitude = "0.0"
+                        clearData()
+                        Pref.isAutoLogout = false
+                        Pref.isAddAttendence = false
+                    } else
+                        performLogout()
+                        BaseActivity.isApiInitiated = false
+                        takeActionOnGeofence()
+                }, { error ->
+                        Toaster.msgShort(this, getString(R.string.something_went_wrong))
+                        Timber.d("AUTO_LOGOUT : " + "RESPONSE ERROR: " + "\n" + "Time : " + AppUtils.getCurrentDateTime() + ", USER :" + Pref.user_name + ",MESSAGE : " + error.localizedMessage)
+                        error.printStackTrace()
+                        performLogout()
+                    })
+        )*/
     }
 
 
@@ -521,6 +973,7 @@ class DashboardActivity : BaseActivity(), View.OnClickListener, BaseNavigation, 
     lateinit var tv_noti_count: AppCustomTextView
     private lateinit var iv_home_icon: ImageView
     private lateinit var nearbyShops: AppCustomTextView
+    private lateinit var contacts_TV: AppCustomTextView
     private lateinit var menuBeatTV: AppCustomTextView// 5.0 DashboardActivity AppV 4.0.6  MenuBeatFrag
     private lateinit var marketAssistTV: AppCustomTextView
     private lateinit var tv_pending_out_loc_menu: AppCustomTextView
@@ -863,6 +1316,7 @@ class DashboardActivity : BaseActivity(), View.OnClickListener, BaseNavigation, 
                     }
 
                     val leadActivityList=AppDatabase.getDBInstance()!!.leadActivityDao().getAll(AppUtils.getCurrentDateForShopActi())
+                    Timber.d("lead activity ${leadActivityList.size}")
                     leadActivityList?.forEach {
                         val notification = NotificationUtils(getString(R.string.app_name), "", "", "")
                         //val shop = AppDatabase.getDBInstance()?.addShopEntryDao()?.getShopByIdN(it.shopid)
@@ -1070,6 +1524,12 @@ class DashboardActivity : BaseActivity(), View.OnClickListener, BaseNavigation, 
             WorkManager.getInstance(this).enqueueUniquePeriodicWork("loc_worker", ExistingPeriodicWorkPolicy.KEEP, request)
         }
         }, 1000)
+
+
+        // In your Application class or MainActivity
+       // FacebookSdk.sdkInitialize(getApplicationContext());
+       // AppEventsLogger.activateApp(application); // For logging app activation events
+
 
     }
     //Start of Rev 18 DashboardActivity AppV 4.0.8 Suman    28/04/2023 worker manager updation 25973
@@ -1442,6 +1902,36 @@ class DashboardActivity : BaseActivity(), View.OnClickListener, BaseNavigation, 
     override fun onResume() {
         super.onResume()
 
+        //begin Suman 21-09-2023 mantis id 0026837
+        try{
+            val packageName = "com.google.android.apps.maps"
+            val appInfo: ApplicationInfo = this.getPackageManager().getApplicationInfo(packageName, 0)
+            var appstatus = appInfo.enabled
+
+            if(!appstatus){
+                val simpleDialog = Dialog(mContext)
+                simpleDialog.setCancelable(false)
+                simpleDialog.getWindow()!!.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+                simpleDialog.setContentView(R.layout.dialog_ok)
+                val dialogHeader = simpleDialog.findViewById(R.id.dialog_yes_header_TV) as AppCustomTextView
+                dialogHeader.text = "Location will be inappropriate as Google map is disabled. Please go to settings of your phone and Enable Google Map. Thank you."
+                val dialogYes = simpleDialog.findViewById(R.id.tv_dialog_yes) as AppCustomTextView
+                dialogYes.setOnClickListener({ view ->
+                    simpleDialog.cancel()
+                })
+                simpleDialog.show()
+                return
+            }else{
+                println("load_frag " +" gmap app enable")
+            }
+
+            //val pInfo = this.packageManager.getPackageInfo("com.google.android.apps.maps", PackageManager.GET_PERMISSIONS)
+            //val version = pInfo.versionName
+        }catch (ex:Exception){
+            ex.printStackTrace()
+        }
+        //end Suman 21-09-2023 mantis id 0026837
+
         println("tag_lifecycle onresume")
         //if(Settings.Secure.getInt(this.getContentResolver(), Settings.Secure.ADB_ENABLED, 0) == 1 && Pref.IsUsbDebuggingRestricted) {
         if(Settings.Secure.getInt(this.getContentResolver(), Settings.Secure.DEVELOPMENT_SETTINGS_ENABLED , 0) == 1 && Pref.IsUsbDebuggingRestricted) {
@@ -1503,6 +1993,47 @@ class DashboardActivity : BaseActivity(), View.OnClickListener, BaseNavigation, 
         callUnreadNotificationApi()
 
             checkForFingerPrint()
+
+
+
+        //battery check onresume
+        if(Pref.IsAnyPageVisitFromDshboard){
+            val pm = mContext.getSystemService(Context.POWER_SERVICE) as PowerManager
+            var sett = pm.isIgnoringBatteryOptimizations(packageName)
+            if(sett==false){
+                val simpleDialog = Dialog(mContext)
+                simpleDialog.setCancelable(false)
+                simpleDialog.getWindow()!!.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+                simpleDialog.setContentView(R.layout.dialog_ok_logout)
+                val dialogHeader = simpleDialog.findViewById(R.id.dialog_yes_header_TV) as AppCustomTextView
+                if(AppUtils.getDeviceName().contains("MI",ignoreCase = true) || AppUtils.getDeviceName().contains("Redmi",ignoreCase = true) ||
+                    AppUtils.getDeviceName().contains("Poco",ignoreCase = true)){
+                    dialogHeader.text = "Go to Settings -> Apps -> Manage Apps -> FSM App -> Battery Saver -> No restrictions."
+                }else if(AppUtils.getDeviceName().contains("Vivo",ignoreCase = true)){
+                    dialogHeader.text = "Go to Settings -> Battery -> Background Battery Power Consumption Ranking / High Background Power Consumption -> FSM App -> Don't Restrict."
+                }else{
+                    dialogHeader.text = "Go to Settings -> Apps -> FSM App -> Battery -> Unrestricted."
+                }
+                val dialogYes = simpleDialog.findViewById(R.id.tv_dialog_yes) as AppCustomTextView
+                dialogYes.setOnClickListener({ view ->
+                    simpleDialog.cancel()
+                    callLogout()
+                })
+                simpleDialog.show()
+                Handler().postDelayed(Runnable {
+                    val timer = object : CountDownTimer(6 * 1000, 1000) {
+                        override fun onTick(millisUntilFinished: Long) {
+                            dialogYes.text = "Logout in "+(millisUntilFinished / 1000).toString()+" seconds..."
+                        }
+                        override fun onFinish() {
+                            simpleDialog.cancel()
+                            callLogout()
+                        }
+                    }.start()
+                }, 1000)
+            }
+        }
+
 
     }
 
@@ -2160,6 +2691,7 @@ class DashboardActivity : BaseActivity(), View.OnClickListener, BaseNavigation, 
         nearby_shops_TV = findViewById<AppCustomTextView>(R.id.nearby_shops_TV)
         my_orders_TV = findViewById<AppCustomTextView>(R.id.my_orders_TV)
         nearbyShops = findViewById<AppCustomTextView>(R.id.nearby_shop_TV)
+        contacts_TV = findViewById<AppCustomTextView>(R.id.contacts_TV)
         menuBeatTV = findViewById<AppCustomTextView>(R.id.menu_beat_TV)// 5.0 DashboardActivity AppV 4.0.6  MenuBeatFrag
         marketAssistTV = findViewById<AppCustomTextView>(R.id.menu_market_assist_TV)
         tv_pending_out_loc_menu = findViewById<AppCustomTextView>(R.id.tv_pending_out_loc_menu)
@@ -2246,6 +2778,7 @@ class DashboardActivity : BaseActivity(), View.OnClickListener, BaseNavigation, 
         tickTV.setOnClickListener(this)
         logo.setOnClickListener(this)
         nearbyShops.setOnClickListener(this)
+        contacts_TV.setOnClickListener(this)
         marketAssistTV.setOnClickListener(this)
         menuBeatTV.setOnClickListener(this)// 5.0 DashboardActivity AppV 4.0.6  MenuBeatFrag
         tv_pending_out_loc_menu.setOnClickListener(this)
@@ -2662,6 +3195,11 @@ class DashboardActivity : BaseActivity(), View.OnClickListener, BaseNavigation, 
             nearby_shop_TV.visibility = View.VISIBLE
         else
             nearby_shop_TV.visibility = View.GONE
+
+        if (Pref.IsShowMenuCRMContacts)
+            contacts_TV.visibility = View.VISIBLE
+        else
+            contacts_TV.visibility = View.GONE
 
         if (Pref.IsmanualInOutTimeRequired)
             tv_pending_out_loc_menu.visibility = View.VISIBLE
@@ -3127,6 +3665,7 @@ class DashboardActivity : BaseActivity(), View.OnClickListener, BaseNavigation, 
             }
             R.id.logout_TV -> {
                 //performLogout()
+                Pref.IsAutoLogoutFromBatteryCheck = false
                 if (Pref.DayEndMarked == false && Pref.IsShowDayEnd == true && Pref.DayStartMarked) {
                     showSnackMessage("Please mark Day End before logout. Thanks.")
                 } else {
@@ -3397,6 +3936,10 @@ class DashboardActivity : BaseActivity(), View.OnClickListener, BaseNavigation, 
                 }
             }
             // 5.0 DashboardActivity AppV 4.0.6  MenuBeatFrag
+
+            R.id.contacts_TV->{
+                loadFragment(FragType.ContactsFrag, false, "")
+            }
             R.id.menu_beat_TV ->{
                 if (!Pref.isAddAttendence) {
                     (mContext as DashboardActivity).checkToShowAddAttendanceAlert()
@@ -4925,6 +5468,9 @@ class DashboardActivity : BaseActivity(), View.OnClickListener, BaseNavigation, 
                     } else
                         setTopBarVisibility(TopBarConfig.GPS)
                 }
+                if(Pref.IsAutoLogoutFromBatteryCheck){
+                    setTopBarVisibility(TopBarConfig.NONE)
+                }
             }
             FragType.ReimbursementFragment -> {
                 if (enableFragGeneration) {
@@ -5817,6 +6363,27 @@ class DashboardActivity : BaseActivity(), View.OnClickListener, BaseNavigation, 
                 setTopBarVisibility(TopBarConfig.HOME)
                 setTopBarVisibility(TopBarConfig.PHOTOREG)
             }
+            FragType.ContactsFrag -> {
+                if (enableFragGeneration) {
+                    mFragment = ContactsFrag()
+                }
+                setTopBarTitle("Contact(s)")
+                setTopBarVisibility(TopBarConfig.HOME)
+            }
+            FragType.ContactsAddFrag -> {
+                if (enableFragGeneration) {
+                    mFragment = ContactsAddFrag()
+                }
+                setTopBarTitle("Add Contact")
+                setTopBarVisibility(TopBarConfig.HOME)
+            }
+            FragType.ShopCallHisFrag -> {
+                if (enableFragGeneration) {
+                    mFragment = ShopCallHisFrag.getInstance(initializeObject)
+                }
+                setTopBarTitle("Call Log History")
+                setTopBarVisibility(TopBarConfig.HOME)
+            }
             FragType.LeaveHome -> {
                 if (enableFragGeneration) {
                     mFragment = LeaveHome.getInstance(initializeObject)
@@ -6013,6 +6580,25 @@ class DashboardActivity : BaseActivity(), View.OnClickListener, BaseNavigation, 
     private fun setTopBarVisibility(mTopBarConfig: TopBarConfig) {
         tv_noti_count.visibility = View.GONE
         when (mTopBarConfig) {
+            TopBarConfig.NONE ->{
+                iv_home_icon.visibility = View.GONE
+                iv_search_icon.visibility = View.GONE
+                iv_sync_icon.visibility = View.GONE
+                rl_cart.visibility = View.GONE
+                iv_filter_icon.visibility = View.GONE
+                rl_confirm_btn.visibility = View.GONE
+                iv_list_party.visibility = View.GONE
+                logo.visibility = View.GONE
+                iv_map.visibility = View.GONE
+                iv_settings.visibility = View.GONE
+                ic_calendar.visibility = View.GONE
+                ic_chat_bot.visibility = View.GONE
+                iv_cancel_chat.visibility = View.GONE
+                iv_people.visibility = View.GONE
+                iv_scan.visibility = View.GONE
+                iv_view_text.visibility = View.GONE
+                fl_net_status.visibility = View.GONE
+            }
             TopBarConfig.HOME -> {
                 iv_home_icon.visibility = View.VISIBLE
                 iv_search_icon.visibility = View.GONE
@@ -7819,10 +8405,16 @@ class DashboardActivity : BaseActivity(), View.OnClickListener, BaseNavigation, 
             }
 
         } else if (getFragment() != null && getFragment() is LogoutSyncFragment) {
-            if (!isForceLogout) {
-                super.onBackPressed()
-                if (getFragment() != null && getFragment() is ChatBotFragment)
-                    (getFragment() as ChatBotFragment).update()
+            if(!Pref.IsAutoLogoutFromBatteryCheck){
+                try{
+                    if (!isForceLogout) {
+                        super.onBackPressed()
+                        if (getFragment() != null && getFragment() is ChatBotFragment)
+                            (getFragment() as ChatBotFragment).update()
+                    }
+                }catch (ex:Exception){
+                    ex.printStackTrace()
+                }
             }
         } else if (getFragment() != null && getFragment() is AddPJPLocationFragment) {
 
@@ -8185,6 +8777,11 @@ class DashboardActivity : BaseActivity(), View.OnClickListener, BaseNavigation, 
             super.onBackPressed()
             if (getFragment() != null && getFragment() is OrderProductListFrag){
                 (getFragment() as OrderProductListFrag).updateCartSize()
+            }
+        }else if(getFragment() != null && getFragment() is ContactsAddFrag){
+            super.onBackPressed()
+            if (getFragment() != null && getFragment() is ContactsFrag){
+                (getFragment() as ContactsFrag).shopContactList()
             }
         }
         else {
@@ -11732,7 +12329,7 @@ class DashboardActivity : BaseActivity(), View.OnClickListener, BaseNavigation, 
 
         if (Pref.isRevisitCaptureImage) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M){
-                if(Pref.IsnewleadtypeforRuby && shopNameByID.equals("2")){
+                /*if(Pref.IsnewleadtypeforRuby && shopNameByID.equals("2")){
                     initPermissionCheckRubyCUstomi(shopNameByID)
                 }
                 else if (Pref.IsnewleadtypeforRuby && !shopNameByID.equals("2")){
@@ -11740,7 +12337,8 @@ class DashboardActivity : BaseActivity(), View.OnClickListener, BaseNavigation, 
                 }
                 else{
                     initPermissionCheck()
-                }
+                }*/
+                initPermissionCheck()
             }
             else{
                 if(Pref.IsnewleadtypeforRuby && shopNameByID.equals("2")){

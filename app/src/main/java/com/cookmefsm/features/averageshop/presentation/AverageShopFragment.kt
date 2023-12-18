@@ -1505,7 +1505,14 @@ class AverageShopFragment : BaseFragment(), DatePickerListener, View.OnClickList
             addShopData.isShopDuplicate=shop.isShopDuplicate
 
             addShopData.purpose=shop.purpose
-
+//start AppV 4.2.2 tufan    20/09/2023 FSSAI Lic No Implementation 26813
+            try {
+                addShopData.FSSAILicNo = shop.FSSAILicNo
+            }catch (ex:Exception){
+                ex.printStackTrace()
+                addShopData.FSSAILicNo = ""
+            }
+//end AppV 4.2.2 tufan    20/09/2023 FSSAI Lic No Implementation 26813
             callAddShopApi(addShopData, shop.shopImageLocalPath, shop.doc_degree, position)
             //}
         } catch (e: Exception) {
@@ -2748,6 +2755,14 @@ class AverageShopFragment : BaseFragment(), DatePickerListener, View.OnClickList
                    addShopData.isShopDuplicate=mAddShopDBModelEntity.isShopDuplicate
 
                    addShopData.purpose=mAddShopDBModelEntity.purpose
+//start AppV 4.2.2 tufan    20/09/2023 FSSAI Lic No Implementation 26813
+                   try {
+                       addShopData.FSSAILicNo = mAddShopDBModelEntity.FSSAILicNo
+                   }catch (ex:Exception){
+                       ex.printStackTrace()
+                       addShopData.FSSAILicNo = ""
+                   }
+//end AppV 4.2.2 tufan    20/09/2023 FSSAI Lic No Implementation 26813
 
 
                    callAddShopApi(addShopData, mAddShopDBModelEntity.shopImageLocalPath, shopList, true,

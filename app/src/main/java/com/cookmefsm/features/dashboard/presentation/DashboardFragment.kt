@@ -86,6 +86,7 @@ import com.cookmefsm.features.login.api.user_config.UserConfigRepoProvider
 import com.cookmefsm.features.login.model.alarmconfigmodel.AlarmConfigResponseModel
 import com.cookmefsm.features.login.model.globalconfig.ConfigFetchResponseModel
 import com.cookmefsm.features.login.model.mettingListModel.MeetingListResponseModel
+import com.cookmefsm.features.login.model.productlistmodel.NewOdrScrOrderListModel
 import com.cookmefsm.features.login.model.productlistmodel.ProductListOfflineResponseModelNew
 import com.cookmefsm.features.login.model.productlistmodel.ProductListResponseModel
 import com.cookmefsm.features.login.model.userconfig.UserConfigResponseModel
@@ -103,6 +104,8 @@ import com.cookmefsm.features.report.presentation.ReportAdapter
 import com.cookmefsm.features.timesheet.api.TimeSheetRepoProvider
 import com.cookmefsm.features.timesheet.model.TimeSheetConfigResponseModel
 import com.cookmefsm.features.timesheet.model.TimeSheetDropDownResponseModel
+import com.cookmefsm.features.viewAllOrder.api.OrderDetailsListRepoProvider
+import com.cookmefsm.features.viewAllOrder.model.NewOrderDataModel
 import com.cookmefsm.widgets.AppCustomTextView
 
 import com.google.android.gms.tasks.OnSuccessListener
@@ -463,7 +466,7 @@ class DashboardFragment : BaseFragment(), View.OnClickListener, HBRecorderListen
 
         //checkToCallMemberList()
         writeDataToFile()
-        println("on Resume " +AppUtils.getCurrentDateTime());
+        println("on_Resume " +AppUtils.getCurrentDateTime());
 
         /*if(Pref.IsActivateNewOrderScreenwithSize){
             var rateListToday= AppDatabase.getDBInstance()?.newOrderScrOrderDao()?.getRateListByDate(AppUtils.getCurrentDateyymmdd()) as List<String>
@@ -2988,11 +2991,13 @@ class DashboardFragment : BaseFragment(), View.OnClickListener, HBRecorderListen
 
         //callUserConfigApi()   // calling instead of checkToCallAssignedDDListApi()
         //getBeatListApi()
-        getProductRateListApi()
+        //getProductRateListApi()
+
+        getBeatListApi()
     }
 
 
-    private fun getProductRateListApi() {
+   /* private fun getProductRateListApi() {
         if(Pref.isOrderShow){
             Timber.d("api_call_dash  getProductRateListApi()")
             val repository = ProductListRepoProvider.productListProvider()
@@ -3036,7 +3041,7 @@ class DashboardFragment : BaseFragment(), View.OnClickListener, HBRecorderListen
             Timber.d("API_Optimization getProductRateListApi DashFrag : disable " +  "Time : " + AppUtils.getCurrentDateTime() + ", USER :" + Pref.user_name )
             getBeatListApi()
         }
-    }
+    }*/
 
     private fun getBeatListApi() {
         // Begin Rev 12.0 DashboardFragment AppV 4.0.8 Suman    24/04/2023 Beat api fetch updation 0025898
@@ -3303,69 +3308,244 @@ class DashboardFragment : BaseFragment(), View.OnClickListener, HBRecorderListen
     private fun getProductList(date: String?) {
         if(Pref.isOrderShow){
             Timber.d("API_Optimization  getProductList DashFrag  : enable " +  "Time : " + AppUtils.getCurrentDateTime() + ", USER :" + Pref.user_name )
-        val repository = ProductListRepoProvider.productListProvider()
-        var progress_wheel: ProgressWheel? = null
-        if (Pref.isAttendanceFeatureOnly)
-            progress_wheel = progress_wheel_attendance
-        else
-            progress_wheel = this.progress_wheel
+            val repository = ProductListRepoProvider.productListProvider()
+            var progress_wheel: ProgressWheel? = null
+            if (Pref.isAttendanceFeatureOnly)
+                progress_wheel = progress_wheel_attendance
+            else
+                progress_wheel = this.progress_wheel
             Timber.d("api_call_dash  getProductList()")
-        progress_wheel?.spin()
-        BaseActivity.compositeDisposable.add(
+            progress_wheel?.spin()
+            BaseActivity.compositeDisposable.add(
                 //repository.getProductList(Pref.session_token!!, Pref.user_id!!, date!!)
                 repository.getProductList(Pref.session_token!!, Pref.user_id!!, "")
-                        .observeOn(AndroidSchedulers.mainThread())
-                        .subscribeOn(Schedulers.io())
-                        .subscribe({ result ->
-                            val response = result as ProductListResponseModel
-                            if (response.status == NetworkConstant.SUCCESS) {
-                                val list = response.product_list
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribeOn(Schedulers.io())
+                    .subscribe({ result ->
+                        val response = result as ProductListResponseModel
+                        if (response.status == NetworkConstant.SUCCESS) {
+                            val list = response.product_list
 
-                                if (list != null && list.isNotEmpty()) {
+                            if (list != null && list.isNotEmpty()) {
 
-                                    doAsync {
+                                doAsync {
 
-                                        if (!TextUtils.isEmpty(date))
-                                            AppDatabase.getDBInstance()?.productListDao()?.deleteAllProduct()
+                                    if (!TextUtils.isEmpty(date))
+                                        AppDatabase.getDBInstance()?.productListDao()?.deleteAllProduct()
 
-                                        AppDatabase.getDBInstance()?.productListDao()?.insertAll(list!!)
+                                    AppDatabase.getDBInstance()?.productListDao()?.insertAll(list!!)
 
-                                        /*for (i in list.indices) {
-                                            val productEntity = ProductListEntity()
-                                            productEntity.id = list[i].id?.toInt()!!
-                                            productEntity.product_name = list[i].product_name
-                                            productEntity.watt = list[i].watt
-                                            productEntity.category = list[i].category
-                                            productEntity.brand = list[i].brand
-                                            productEntity.brand_id = list[i].brand_id
-                                            productEntity.watt_id = list[i].watt_id
-                                            productEntity.category_id = list[i].category_id
-                                            productEntity.date = AppUtils.getCurrentDateForShopActi()
-                                            AppDatabase.getDBInstance()?.productListDao()?.insert(productEntity)
-                                        }*/
+                                    /*for (i in list.indices) {
+                                        val productEntity = ProductListEntity()
+                                        productEntity.id = list[i].id?.toInt()!!
+                                        productEntity.product_name = list[i].product_name
+                                        productEntity.watt = list[i].watt
+                                        productEntity.category = list[i].category
+                                        productEntity.brand = list[i].brand
+                                        productEntity.brand_id = list[i].brand_id
+                                        productEntity.watt_id = list[i].watt_id
+                                        productEntity.category_id = list[i].category_id
+                                        productEntity.date = AppUtils.getCurrentDateForShopActi()
+                                        AppDatabase.getDBInstance()?.productListDao()?.insert(productEntity)
+                                    }*/
 
-                                        uiThread {
-                                            progress_wheel.stopSpinning()
-                                            getSelectedRouteListRefresh()
-                                        }
+                                    uiThread {
+                                        progress_wheel.stopSpinning()
+                                        getProductRateListApi()
                                     }
-                                } else {
-                                    progress_wheel.stopSpinning()
-                                    getSelectedRouteListRefresh()
                                 }
                             } else {
                                 progress_wheel.stopSpinning()
-                                getSelectedRouteListRefresh()
+                                getProductRateListApi()
                             }
+                        } else {
+                            progress_wheel.stopSpinning()
+                            getProductRateListApi()
+                        }
 
+                    }, { error ->
+                        error.printStackTrace()
+                        progress_wheel.stopSpinning()
+                        getProductRateListApi()
+                    })
+            )
+        }else{
+            Timber.d("API_Optimization getProductList DashFrag : disable " +  "Time : " + AppUtils.getCurrentDateTime() + ", USER :" + Pref.user_name )
+            println("dash_ref_flow getProductList else")
+            getNewOrderDataList()
+        }
+    }
+
+    private fun getProductRateListApi() {
+        if(Pref.isOrderShow){
+            Timber.d("api_call_dash  getProductRateListApi()")
+            val repository = ProductListRepoProvider.productListProvider()
+            progress_wheel.spin()
+            BaseActivity.compositeDisposable.add(
+                repository.getProductRateOfflineListNew()
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribeOn(Schedulers.io())
+                    .subscribe({ result ->
+                        //val response = result as ProductListOfflineResponseModel
+                        val response = result as ProductListOfflineResponseModelNew
+                        BaseActivity.isApiInitiated = false
+                        if (response.status == NetworkConstant.SUCCESS) {
+                            val productRateList = response.product_rate_list
+                            if (productRateList != null && productRateList.size > 0) {
+                                doAsync {
+                                    AppDatabase.getDBInstance()!!.productRateDao().deleteAll()
+                                    AppDatabase.getDBInstance()?.productRateDao()?.insertAll(productRateList)
+                                    uiThread {
+                                        progress_wheel.stopSpinning()
+                                        getNewOrderDataList()
+                                    }
+                                }
+                            } else {
+                                progress_wheel.stopSpinning()
+                                getNewOrderDataList()
+                            }
+                        } else {
+
+                            doAsync {
+                                AppDatabase.getDBInstance()?.productRateDao()?.deleteAll()
+                                val rateList: ArrayList<ProductRateEntity> = AppDatabase.getDBInstance()?.productRateDao()?.getAllBlank() as ArrayList<ProductRateEntity>
+                                AppDatabase.getDBInstance()?.productRateDao()?.insertAll(rateList)
+                                uiThread {
+                                    progress_wheel.stopSpinning()
+                                    getNewOrderDataList()
+                                }
+                            }
+                        }
+
+                    }, { error ->
+                        error.printStackTrace()
+                        BaseActivity.isApiInitiated = false
+                        progress_wheel.stopSpinning()
+                        getNewOrderDataList()
+                    })
+            )
+        }else{
+            Timber.d("API_Optimization getProductRateListApi DashFrag : disable " +  "Time : " + AppUtils.getCurrentDateTime() + ", USER :" + Pref.user_name )
+            getNewOrderDataList()
+        }
+    }
+
+    fun getNewOrderDataList() {
+        if(Pref.IsActivateNewOrderScreenwithSize || true) {
+            try {
+                println("dash_ref_flow getNewOrderDataList if")
+                AppDatabase.getDBInstance()?.newOrderGenderDao()?.deleteAll()
+                AppDatabase.getDBInstance()?.newOrderProductDao()?.deleteAll()
+                AppDatabase.getDBInstance()?.newOrderColorDao()?.deleteAll()
+                AppDatabase.getDBInstance()?.newOrderSizeDao()?.deleteAll()
+
+                progress_wheel.spin()
+
+                val repository = OrderDetailsListRepoProvider.provideOrderDetailsListRepository()
+                BaseActivity.compositeDisposable.add(
+                    repository.getNewOrderData()
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .subscribeOn(Schedulers.io())
+                        .subscribe({ result ->
+                            val response = result as NewOrderDataModel
+
+                            progress_wheel.stopSpinning()
+
+                            if (response.status == NetworkConstant.SUCCESS) {
+                                var list_gender = response.Gender_list
+                                var list_product = response.Product_list
+                                var list_color = response.Color_list
+                                var list_size = response.size_list
+
+                                if (list_gender != null && list_gender.isNotEmpty()) {
+                                    doAsync {
+                                        for (l in 0..list_gender.size - 1) {
+                                            if (list_gender.get(l).gender_id == 1) {
+                                                Pref.new_ord_gender_male = list_gender.get(l).gender.toString().toUpperCase()
+                                            }
+                                            if (list_gender.get(l).gender_id == 2) {
+                                                Pref.new_ord_gender_female = list_gender.get(l).gender.toString().toUpperCase()
+                                            }
+                                        }
+                                        AppDatabase.getDBInstance()?.newOrderGenderDao()?.insertAll(list_gender)
+                                        AppDatabase.getDBInstance()?.newOrderGenderDao()?.updateGendertoUpperCase()
+
+                                        if (list_product != null && list_product.isNotEmpty()) {
+                                            AppDatabase.getDBInstance()?.newOrderProductDao()?.insertAll(list_product)
+                                            AppDatabase.getDBInstance()?.newOrderProductDao()?.updateProducttoUpperCase()
+                                        }
+                                        if (list_color != null && list_color.isNotEmpty()) {
+                                            AppDatabase.getDBInstance()?.newOrderColorDao()?.insertAll(list_color)
+                                            AppDatabase.getDBInstance()?.newOrderColorDao()?.updateColorNametoUpperCase()
+
+                                        }
+                                        if (list_size != null && list_size.isNotEmpty()) {
+                                            AppDatabase.getDBInstance()?.newOrderSizeDao()?.insertAll(list_size)
+                                            AppDatabase.getDBInstance()?.newOrderSizeDao()?.updateSizeNametoUpperCase()
+                                        }
+                                        uiThread {
+                                            getNewOrderHistory()
+                                        }
+                                    }
+                                } else {
+                                    getNewOrderHistory()
+                                }
+                            } else {
+                                getNewOrderHistory()
+                            }
                         }, { error ->
                             error.printStackTrace()
                             progress_wheel.stopSpinning()
+                            getNewOrderHistory()
+                        })
+                )
+            } catch (ex: java.lang.Exception) {
+                ex.printStackTrace()
+                progress_wheel.stopSpinning()
+                getNewOrderHistory()
+            }
+        } else{
+            println("dash_ref_flow getNewOrderDataList else")
+            getSelectedRouteListRefresh()
+        }
+    }
+
+    private fun getNewOrderHistory() {
+        try {
+            println("dash_ref_flow getNewOrderHistory if")
+            val list = AppDatabase.getDBInstance()?.newOrderScrOrderDao()?.getAll()
+            if (list!!.size == 0) {
+                val repository = OrderDetailsListRepoProvider.provideOrderDetailsListRepository()
+                BaseActivity.compositeDisposable.add(
+                    repository.getNewOrderHistoryDataSimplefied()
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .subscribeOn(Schedulers.io())
+                        .subscribe({ result ->
+                            val response = result as NewOdrScrOrderListModel
+                            if (response.status == NetworkConstant.SUCCESS) {
+                                doAsync {
+                                    AppDatabase.getDBInstance()?.newOrderScrOrderDao()?.insertAll(response.order_list!!.asReversed())
+                                    AppDatabase.getDBInstance()?.newOrderScrOrderDao()?.updateSizeNametoUpperCase()
+                                    uiThread {
+                                        getSelectedRouteListRefresh()
+                                    }
+                                }
+                            } else {
+                                println("dash_ref_flow getNewOrderHistory else")
+                                getSelectedRouteListRefresh()
+                            }
+                        }, { error ->
+                            println("dash_ref_flow getNewOrderHistory error")
                             getSelectedRouteListRefresh()
                         })
-        )
-        }else{
-            Timber.d("API_Optimization getProductList DashFrag : disable " +  "Time : " + AppUtils.getCurrentDateTime() + ", USER :" + Pref.user_name )
+                )
+            } else {
+                println("dash_ref_flow getNewOrderHistory else else")
+                getSelectedRouteListRefresh()
+            }
+        } catch (ex: Exception) {
+            ex.printStackTrace()
+            println("dash_ref_flow getNewOrderHistory catch")
             getSelectedRouteListRefresh()
         }
     }
@@ -4543,11 +4723,6 @@ class DashboardFragment : BaseFragment(), View.OnClickListener, HBRecorderListen
                                                 if (!TextUtils.isEmpty(response.getconfigure?.get(i)?.Value)) {
                                                     Pref.IsMenuShowAIMarketAssistant = response.getconfigure?.get(i)?.Value == "1"
                                                 }
-                                            } else if (response.getconfigure?.get(i)?.Key.equals("IsUsbDebuggingRestricted", ignoreCase = true)) {
-                                                Pref.IsUsbDebuggingRestricted = response.getconfigure!![i].Value == "1"
-                                                if (!TextUtils.isEmpty(response.getconfigure?.get(i)?.Value)) {
-                                                    Pref.IsUsbDebuggingRestricted = response.getconfigure?.get(i)?.Value == "1"
-                                                }
                                             }
                                             //Begin 17.0 DashboardFragment v 4.1.6 Suman 13/07/2023 mantis 26555 Usersettings
                                             else if (response.getconfigure?.get(i)?.Key.equals("IsUsbDebuggingRestricted", ignoreCase = true)) {
@@ -4557,6 +4732,18 @@ class DashboardFragment : BaseFragment(), View.OnClickListener, HBRecorderListen
                                                 }
                                             }
                                             //End 17.0 DashboardFragment v 4.1.6 Suman 13/07/2023 mantis 26555 Usersettings
+
+                                            else if (response.getconfigure?.get(i)?.Key.equals("IsDisabledUpdateAddress", ignoreCase = true)) {
+                                                Pref.IsDisabledUpdateAddress = response.getconfigure!![i].Value == "1"
+                                                if (!TextUtils.isEmpty(response.getconfigure?.get(i)?.Value)) {
+                                                    Pref.IsDisabledUpdateAddress = response.getconfigure?.get(i)?.Value == "1"
+                                                }
+                                            }else if (response.getconfigure?.get(i)?.Key.equals("IsShowMenuCRMContacts", ignoreCase = true)) {
+                                                Pref.IsShowMenuCRMContacts = response.getconfigure!![i].Value == "1"
+                                                if (!TextUtils.isEmpty(response.getconfigure?.get(i)?.Value)) {
+                                                    Pref.IsShowMenuCRMContacts = response.getconfigure?.get(i)?.Value == "1"
+                                                }
+                                            }
                                         }
                                     }
                                 } catch (e: Exception) {
@@ -4967,6 +5154,50 @@ class DashboardFragment : BaseFragment(), View.OnClickListener, HBRecorderListen
                                     Pref.Show_distributor_scheme_with_Product = configResponse.Show_distributor_scheme_with_Product!!
                                 //End 15.0 Pref v 4.1.6 Tufan 22/08/2023 mantis 26649 Show distributor scheme with Product
 
+                                //Begin 16.0 Pref v 4.1.6 Tufan 07/09/2023 mantis 26785 Multi visit Interval in Minutes Against the Same Shop
+                                if (configResponse.MultiVisitIntervalInMinutes != null)
+                                    Pref.MultiVisitIntervalInMinutes = configResponse.MultiVisitIntervalInMinutes!!
+                                //End 16.0 Pref v 4.1.6 Tufan 07/09/2023 mantis 26785 Multi visit Interval in Minutes Against the Same Shop
+
+                                //Begin v 4.1.6 Tufan 21/09/2023 mantis 26812 AND 26813  FSSAI Lic No and GSTINPANMandatoryforSHOPTYPE4 In add shop page edit
+                                if (configResponse.GSTINPANMandatoryforSHOPTYPE4 != null)
+                                    Pref.GSTINPANMandatoryforSHOPTYPE4 = configResponse.GSTINPANMandatoryforSHOPTYPE4!!
+                                if (configResponse.FSSAILicNoEnableInShop != null)
+                                    Pref.FSSAILicNoEnableInShop = configResponse.FSSAILicNoEnableInShop!!
+                                if (configResponse.FSSAILicNoMandatoryInShop4 != null)
+                                    Pref.FSSAILicNoMandatoryInShop4 = configResponse.FSSAILicNoMandatoryInShop4!!
+                                //Edit v 4.1.6 Tufan 21/09/2023 mantis 26812 AND 26813  FSSAI Lic No and GSTINPANMandatoryforSHOPTYPE4 In add shop page edit
+
+                                //Begin Puja 16.11.23 mantis-0026997 //
+
+                                if (configResponse.isLeadContactNumber != null)
+                                    Pref.isLeadContactNumber = configResponse.isLeadContactNumber!!
+
+                                if (configResponse.isModelEnable != null)
+                                    Pref.isModelEnable = configResponse.isModelEnable!!
+
+                                if (configResponse.isPrimaryApplicationEnable != null)
+                                    Pref.isPrimaryApplicationEnable = configResponse.isPrimaryApplicationEnable!!
+
+                                if (configResponse.isSecondaryApplicationEnable != null)
+                                    Pref.isSecondaryApplicationEnable = configResponse.isSecondaryApplicationEnable!!
+
+                                if (configResponse.isBookingAmount != null)
+                                    Pref.isBookingAmount = configResponse.isBookingAmount!!
+
+                                if (configResponse.isLeadTypeEnable != null)
+                                    Pref.isLeadTypeEnable = configResponse.isLeadTypeEnable!!
+
+                                if (configResponse.isStageEnable != null)
+                                    Pref.isStageEnable = configResponse.isStageEnable!!
+
+                                if (configResponse.isFunnelStageEnable != null)
+                                    Pref.isFunnelStageEnable = configResponse.isFunnelStageEnable!!
+
+
+                                //End Puja 16.11.23 mantis-0026997 //
+
+
                             }
                             BaseActivity.isApiInitiated = false
                             /*API_Optimization 02-03-2022*/
@@ -4980,7 +5211,22 @@ class DashboardFragment : BaseFragment(), View.OnClickListener, HBRecorderListen
                                 Pref.isShowBeatGroup = false
                                 Pref.IsShowBeatInMenu = false
                             }
-                            
+
+                            //Begin Puja 16.11.23 mantis-0026997 //
+
+                            if(Pref.isCustomerFeatureEnable==false){
+                                Pref.isLeadContactNumber = false
+                                Pref.isModelEnable = false
+                                Pref.isPrimaryApplicationEnable = false
+                                Pref.isSecondaryApplicationEnable = false
+                                Pref.isBookingAmount = false
+                                Pref.isLeadTypeEnable = false
+                                Pref.isStageEnable = false
+                                Pref.isFunnelStageEnable = false
+                            }
+
+                            //End Puja 16.11.23 mantis-0026997 //
+
                             checkToCallAssignedDDListApi()   // calling instead of checkToCallAlarmConfigApi()
 
                         }, { error ->
@@ -8691,6 +8937,15 @@ class DashboardFragment : BaseFragment(), View.OnClickListener, HBRecorderListen
             addShopData.director_name = mAddShopDBModelEntity.director_name
             addShopData.key_person_name = mAddShopDBModelEntity.person_name
             addShopData.phone_no = mAddShopDBModelEntity.person_no
+            //start AppV 4.2.2 tufan    20/09/2023 FSSAI Lic No Implementation 26813
+            try {
+                addShopData.FSSAILicNo = mAddShopDBModelEntity.FSSAILicNo
+            }catch (ex:Exception){
+                ex.printStackTrace()
+                addShopData.FSSAILicNo = ""
+            }
+//end AppV 4.2.2 tufan    20/09/2023 FSSAI Lic No Implementation 26813
+
 
             if (!TextUtils.isEmpty(mAddShopDBModelEntity.family_member_dob))
                 addShopData.family_member_dob = AppUtils.changeAttendanceDateFormatToCurrent(mAddShopDBModelEntity.family_member_dob)

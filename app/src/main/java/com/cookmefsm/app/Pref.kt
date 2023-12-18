@@ -21,6 +21,9 @@ import com.marcinmoskala.kotlinpreferences.PreferenceHolder
 // 13.0 Pref v 4.1.6 Suman 13/07/2023 mantis 26555 Usersettings
 // 14.0 Pref v 4.1.6 Tufan 11/08/2023 mantis 26655 Order Past Days
 // 15.0 Pref v 4.1.6 Tufan 22/08/2023 mantis 26649 Show distributor scheme with Product
+// 16.0 Pref v 4.1.6 Tufan 07/09/2023 mantis 26785 Multi visit Interval in Minutes Against the Same Shop
+//Begin 16.0 Pref v 4.1.6 Tufan 21/09/2023 mantis 26812 AND 26813  FSSAI Lic No and GSTINPANMandatoryforSHOPTYPE4 In add shop page edit
+
 object Pref : PreferenceHolder() {
     var text: String? by bindToPreferenceFieldNullable()
     var num: Int by bindToPreferenceField(0, "SomeIntKey")
@@ -947,5 +950,49 @@ object Pref : PreferenceHolder() {
   var Show_distributor_scheme_with_Product : Boolean by bindToPreferenceField(false, "Show_distributor_scheme_with_Product")
     //end 15.0 Pref v 4.1.6 Tufan 22/08/2023 mantis 26649 Show distributor scheme with Product
 
+   //Begin 16.0 Pref v 4.1.6 Tufan 07/09/2023 mantis 26785 Multi visit Interval in Minutes Against the Same Shop
+   var MultiVisitIntervalInMinutes : String by bindToPreferenceField("1", "MultiVisitIntervalInMinutes")
+    //End 16.0 Pref v 4.1.6 Tufan 07/09/2023 mantis 26785 Multi visit Interval in Minutes Against the Same Shop
+
+
+    //Begin 16.0 Pref v 4.1.6 Tufan 21/09/2023 mantis 26812 AND 26813  FSSAI Lic No and GSTINPANMandatoryforSHOPTYPE4 In add shop page edit
+    var GSTINPANMandatoryforSHOPTYPE4: Boolean by bindToPreferenceField(
+        false,
+        "GSTINPANMandatoryforSHOPTYPE4"
+    )
+    var FSSAILicNoEnableInShop: Boolean by bindToPreferenceField(
+        false,
+        "FSSAILicNoEnableInShop"
+    )
+    var FSSAILicNoMandatoryInShop4: Boolean by bindToPreferenceField(
+        false,
+        "FSSAILicNoMandatoryInShop4"
+    )
+    //end 16.0 Pref v 4.1.6 Tufan 21/09/2023 mantis 26812 AND 26813  FSSAI Lic No and GSTINPANMandatoryforSHOPTYPE4 In add shop page edit
+
+    var IsDisabledUpdateAddress: Boolean by bindToPreferenceField(false, "IsDisabledUpdateAddress")
+
+    var IsAutoLogoutFromBatteryCheck: Boolean by bindToPreferenceField(false, "IsAutoLogoutFromBatteryCheck")
+    var IsLoggedIn: Boolean by bindToPreferenceField(false, "IsLoggedIn")
+    var IsAnyPageVisitFromDshboard: Boolean by bindToPreferenceField(false, "IsAnyPageVisitFromDshboard")
+
+    //Begin Puja 16.11.23 mantis-0026997 //
+
+    var isLeadContactNumber: Boolean by bindToPreferenceField(false, "isLeadContactNumber")
+    var isModelEnable: Boolean by bindToPreferenceField(false, "isModelEnable")
+    var isPrimaryApplicationEnable: Boolean by bindToPreferenceField(false, "isPrimaryApplicationEnable")
+    var isSecondaryApplicationEnable: Boolean by bindToPreferenceField(false, "isSecondaryApplicationEnable")
+    var isBookingAmount: Boolean by bindToPreferenceField(false, "isBookingAmount")
+    var isLeadTypeEnable: Boolean by bindToPreferenceField(false, "isLeadTypeEnable")
+    var isStageEnable: Boolean by bindToPreferenceField(false, "isStageEnable")
+    var isFunnelStageEnable: Boolean by bindToPreferenceField(false, "isFunnelStageEnable")
+
+    //End puja 16.11.23 mantis-0026997 //
+
+    var IsShowMenuCRMContacts: Boolean by bindToPreferenceField(false, "IsShowMenuCRMContacts")
+
+    //mantis id 27063 Suman 04-12-2023
+    var IsCallLogHistoryActivated: Boolean by bindToPreferenceField(false, "IsCallLogHistoryActivated")
 }
+
 

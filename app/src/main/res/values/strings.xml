@@ -13,6 +13,8 @@
     <!--Map Key-->
     <!--<string name="MAP_ProjectAPIKey">AIzaSyBRrqsLZFqThqM8uxw_k94pZMbv3-3h0dM</string>-->
     <string name="MAP_ProjectAPIKey" translatable="false">AIzaSyC_i7I21JzbVstMJaS_w229Ownbr5L_9Iw</string>
+    <string name="facebook_app_id" translatable="false">260734547001450</string>
+    <string name="fb_login_protocol_scheme" translatable="false">fb260734547001450</string>
 
     <!--Login-->
     <string name="username_new" translatable="false">Username</string>
@@ -181,6 +183,7 @@
     <string name="owner_contact_number" translatable="false">Owner Contact Number</string>
     <string name="owner_contact_number1" translatable="false">Contact Number</string>
     <string name="GSTIN" translatable="false">GSTIN Number</string>
+    <string name="FSSAILic" translatable="false">FSSAI Lic Number</string>
     <string name="pan" translatable="false">PAN Number</string>
     <string name="owner_email" translatable="false">Owner Email</string>
     <string name="owner_email1" translatable="false">Email</string>

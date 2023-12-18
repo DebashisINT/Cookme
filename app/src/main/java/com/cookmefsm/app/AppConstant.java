@@ -153,5 +153,17 @@ public interface AppConstant {
 
     String TASK_ACTIVITY = "task_activity";
 
+    String CALL_HIS = "call_his";
 
+    String COMPANY_MASTER = "company_master";
+
+
+    String CRM_TYPE_MASTER = "crm_type_master";
+
+
+    String CRM_STATUS_MASTER = "crm_status_master";
+
+    String CRM_SOURCE_MASTER = "crm_source_master";
+
+    String CRM_STAGE_MASTER = "crm_stage_master";
 }

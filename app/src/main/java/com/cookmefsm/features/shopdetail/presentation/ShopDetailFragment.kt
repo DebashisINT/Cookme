@@ -560,7 +560,10 @@ class ShopDetailFragment : BaseFragment(), View.OnClickListener {
 
         if (Pref.isCustomerFeatureEnable) {
             ll_customer_view.visibility = View.VISIBLE
-            owner_name_RL.visibility = View.GONE
+            //Begin Puja 16.11.23 mantis-0026997 //
+          //  owner_name_RL.visibility = View.GONE
+            owner_name_RL.visibility = View.VISIBLE
+            //End Puja 16.11.23 mantis-0026997 //
             owner_contact_no_label_TV.text = getString(R.string.contact_number)
             owner_email_label_TV.text = getString(R.string.only_email)
         } else {

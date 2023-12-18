@@ -604,6 +604,16 @@ class NearByShopsListFragment : BaseFragment(), View.OnClickListener {
 
             shopObj.purpose=shop_list[i].purpose
 
+            //start AppV 4.2.2 tufan    20/09/2023 FSSAI Lic No Implementation 26813
+            try {
+                shopObj.FSSAILicNo = shop_list[i].FSSAILicNo
+            }catch (ex:Exception){
+                ex.printStackTrace()
+                shopObj.FSSAILicNo = ""
+            }
+//end AppV 4.2.2 tufan    20/09/2023 FSSAI Lic No Implementation 26813
+
+
             /*GSTIN & PAN NUMBER*/
             shopObj.gstN_Number=shop_list[i].GSTN_Number
             shopObj.shopOwner_PAN=shop_list[i].ShopOwner_PAN
@@ -1487,6 +1497,14 @@ class NearByShopsListFragment : BaseFragment(), View.OnClickListener {
                     addShopData.isShopDuplicate=mAddShopDBModelEntity.isShopDuplicate
 
                     addShopData.purpose=mAddShopDBModelEntity.purpose
+//start AppV 4.2.2 tufan    20/09/2023 FSSAI Lic No Implementation 26813
+                    try {
+                        addShopData.FSSAILicNo = mAddShopDBModelEntity.FSSAILicNo
+                    }catch (ex:Exception){
+                        ex.printStackTrace()
+                        addShopData.FSSAILicNo = ""
+                    }
+//end AppV 4.2.2 tufan    20/09/2023 FSSAI Lic No Implementation 26813
 
                     addShopData.GSTN_Number=mAddShopDBModelEntity.gstN_Number
                     addShopData.ShopOwner_PAN=mAddShopDBModelEntity.shopOwner_PAN
@@ -1971,6 +1989,14 @@ class NearByShopsListFragment : BaseFragment(), View.OnClickListener {
         addShopData.isShopDuplicate=mAddShopDBModelEntity.isShopDuplicate
 
         addShopData.purpose=mAddShopDBModelEntity.purpose
+//start AppV 4.2.2 tufan    20/09/2023 FSSAI Lic No Implementation 26813
+        try {
+            addShopData.FSSAILicNo = mAddShopDBModelEntity.FSSAILicNo
+        }catch (ex:Exception){
+            ex.printStackTrace()
+            addShopData.FSSAILicNo = ""
+        }
+//end AppV 4.2.2 tufan    20/09/2023 FSSAI Lic No Implementation 26813
 
         addShopData.GSTN_Number=mAddShopDBModelEntity.gstN_Number
         addShopData.ShopOwner_PAN=mAddShopDBModelEntity.shopOwner_PAN
@@ -2745,6 +2771,11 @@ class NearByShopsListFragment : BaseFragment(), View.OnClickListener {
         addShopReqData.GSTN_Number = addShopData.gstN_Number
         addShopReqData.ShopOwner_PAN = addShopData.shopOwner_PAN
 
+        //begin Suman 12-10-2023 mantis id 26874
+        if(isAddressUpdated){
+            addShopReqData.isUpdateAddressFromShopMaster = true
+        }
+        //end Suman 12-10-2023 mantis id 26874
 
         callEditShopApi(addShopReqData, addShopData.shopImageLocalPath, false, isAddressUpdated, addShopData.doc_degree)
     }
@@ -3046,6 +3077,11 @@ class NearByShopsListFragment : BaseFragment(), View.OnClickListener {
 
                         shop.actual_address = address_
                         shop.isEditUploaded = 0
+
+                        // begin Suman 12-10-2023 mantis id 26874
+                        shop.isUpdateAddressFromShopMaster = true
+                        // end Suman 12-10-2023 mantis id 26874
+
                         AppDatabase.getDBInstance()?.addShopEntryDao()?.updateAddShop(shop)
 
                         convertToReqAndApiCall(shop, true)
@@ -3881,6 +3917,14 @@ class NearByShopsListFragment : BaseFragment(), View.OnClickListener {
         addShopData.isShopDuplicate=mAddShopDBModelEntity.isShopDuplicate
 
         addShopData.purpose=mAddShopDBModelEntity.purpose
+//start AppV 4.2.2 tufan    20/09/2023 FSSAI Lic No Implementation 26813
+        try {
+            addShopData.FSSAILicNo = mAddShopDBModelEntity.FSSAILicNo
+        }catch (ex:Exception){
+            ex.printStackTrace()
+            addShopData.FSSAILicNo = ""
+        }
+//end AppV 4.2.2 tufan    20/09/2023 FSSAI Lic No Implementation 26813
 
         addShopData.GSTN_Number=mAddShopDBModelEntity.gstN_Number
         addShopData.ShopOwner_PAN=mAddShopDBModelEntity.shopOwner_PAN

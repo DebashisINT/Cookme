@@ -76,6 +76,9 @@ public interface AddShopDao {
     @Query("Select * from shop_detail where shop_id=:shopId")
     AddShopDBModelEntity getShopByIdN(String shopId);
 
+    @Query("Select * from shop_detail where shop_id=:shopId and owner_contact_number=:owner_contact_number")
+    List<AddShopDBModelEntity> getShopByIdPhone(String shopId,String owner_contact_number);
+
     @Query("Select * from shop_detail where shop_id=:shopId")
     List<AddShopDBModelEntity> getShopByIdList(String shopId);
 
@@ -346,5 +349,14 @@ public interface AddShopDao {
 
     @Query("Select * from shop_detail where type=:type and assigned_to_dd_id=:assigned_to_dd_id and lower(shop_name)=:shop_name")
     List<AddShopDBModelEntity> getShopsAccordingToTypeDD(String type,String assigned_to_dd_id,String shop_name);
+
+    @Query("select * from shop_detail where shop_name=:shop_name and owner_contact_number=:owner_contact_number")
+    List<AddShopDBModelEntity> getCustomData(String shop_name,String owner_contact_number);
+
+    @Query("select * from shop_detail where type='99' order by shop_name COLLATE NOCASE ASC")
+    List<AddShopDBModelEntity> getContatcShops();
+
+    @Query("delete from shop_detail where type='99'")
+    void del99();
 
 }
